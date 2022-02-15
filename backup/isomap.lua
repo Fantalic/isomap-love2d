@@ -21,14 +21,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.]]--
 
 local json = require("dkjson")
-local utils = require "uUtils"
 --TODO: Load dkjson relative to mapDecoder's path.
 
 
 map = {}
 mapDec = {}
 local mapTextures = {}
-tileData = {}
+mapPositions = {}
 mapProps = {}
 local mapLighting = {}
 mapPropsfield = {}
@@ -66,7 +65,7 @@ function map.generatePlayField()
 		print("Map name: "..mapDec.general[1].name)
 		print("Map version: "..mapDec.general[1].version)
 		print("Map lighting: "..mapDec.general[1].lighting)
-		-- NOTE: not 0 to 255 - its 0 to  1
+		--NOTE: not 0 to 255 - its 0 to  1
 		if mapDec.general[1].lighting ~= nil then
 			mapLighting = string.split_(mapDec.general[1].lighting, "|")
 		end
@@ -74,22 +73,25 @@ function map.generatePlayField()
 	end
 
 	print("Ground textures: =-=-=-=-=-=-=-=")
-	for key, texture in pairs(mapDec.textures) do
+	for i, texture in ipairs(mapDec.textures) do
 		--Print table contents for now
-		mapTextures[key] = {
-			file = texture.file,
-			image = love.graphics.newImage("textures/"..texture.file)
-		}
+		print(texture.file)
+		print(texture.mnemonic)
+		print("---")
 
-		-- place in JSONMAP
-		tileWidth = mapTextures[key].image:getWidth()/2
-		tileHeight = mapTextures[key].image:getHeight()/2
+		table.insert(
+		  mapTextures,
+		  {
+				file = texture.file,
+				mnemonic = texture.mnemonic,
+				image = love.graphics.newImage("textures/"..texture.file)
+			}
+		)
 
-		print("texture width: ".. tileWidth)
-		print("tile height = " .. tileHeight)
 	end
 	--Get ground texture dimensions
-
+	tileWidth = mapTextures[1].image:getWidth()/2
+	tileHeight = mapTextures[1].image:getHeight()/2
 
 	print("Playfield props: =-=-=-=-=-=-=-=")
 	if mapDec.props ~= nil then
@@ -120,31 +122,27 @@ function map.generatePlayField()
 	--TODO: here the position of the textures.. see other project
 	-- NOTE : in mapDec allways array. make single element but another layer
 	--        use numbers instead of strings
-	for colunas in ipairs(mapDec.data) do
-		for linhas in ipairs(mapDec.data[colunas]) do
-			for i, tKey in ipairs(mapDec.data[colunas][linhas]) do
-				--Add ground texture if mnemonic is found
-				-- NOTE WHat is mnemonic ?
-
-				-- --local groundTexture = mapTextures[]
-				-- local image = nil
-				-- if groundTexture ~= nil then
-				-- 	image = groundTexture.image
-				-- end
-				local xPos = linhas
-				local yPos = colunas
-				if tileData[colunas] == nil then
-					tileData[colunas] = {}
+	for i, groundTexture in ipairs(mapTextures) do
+		for colunas in ipairs(mapDec.data) do
+			for linhas in ipairs(mapDec.data[colunas]) do
+				for i, properties in ipairs(mapDec.data[colunas][linhas]) do
+					--Add ground texture if mnemonic is found
+					-- NOTE WHat is mnemonic ?
+					if properties == groundTexture.mnemonic then
+						local xPos = linhas
+						local yPos = colunas
+						if mapPositions[colunas] == nil then
+							mapPositions[colunas] = {}
+						end
+						if mapPositions[colunas][linhas] == nil then
+							mapPositions[colunas][linhas] = {}
+						end
+						table.insert(
+						  mapPositions[colunas][linhas],
+							{ texture = groundTexture.image, x=xPos, y=yPos }
+						)
+					end
 				end
-
-				if tileData[colunas][linhas] == nil then
-					tileData[colunas][linhas] = {}
-				end
-				table.insert(
-				  tileData[colunas][linhas],
-					 { textureKey = tKey, x=xPos, y=yPos }
-				)
-
 			end
 		end
 	end
@@ -160,7 +158,7 @@ function map.generatePlayField()
 				--Iterate over the objects in a given 2D position
 				for i, objects in ipairs(mapDec.data[colunas][linhas]) do
 					if objects == props.mnemonic then
-						--table.insert(tileData[colunas][linhas], {texture=props.image, x=linhas, y=colunas, offX=props.origins[1], offY=props.origins[2]})
+						--table.insert(mapPositions[colunas][linhas], {texture=props.image, x=linhas, y=colunas, offX=props.origins[1], offY=props.origins[2]})
 
 						--VERY IMPORTANT NOTE ABOUT THE FOLLOWING LINES
 						--these control the ZBuffer in some *dark manner*. IT WORKS. I **really** have to figure out why.
@@ -169,22 +167,7 @@ function map.generatePlayField()
 						colX = linhas * (tileWidth*zoomLevel)
 						colY = colunas * (tileWidth*zoomLevel)
 						colX, colY = map.toIso(colX, colY)
-						table.insert(
-						  mapPropsfield,
-							{
-								texture=props.image,
-								x=linhas,
-								y=colunas,
-								offX=props.origins[1],
-								offY=props.origins[2],
-								mapY = pY,
-								mapX = pX,
-								colX = colX,
-								colY = colY,
-								width = props.image:getWidth(),
-								height = props.image:getHeight(),
-								alpha = false
-							})
+						table.insert(mapPropsfield,{texture=props.image, x=linhas, y=colunas, offX=props.origins[1], offY=props.origins[2], mapY = pY, mapX = pX, colX = colX, colY = colY, width = props.image:getWidth(), height = props.image:getHeight(), alpha = false })
 					end
 				end
 
@@ -193,8 +176,8 @@ function map.generatePlayField()
 
 	end
 	--Calculate map dimensions
-	mapPlayfieldWidthInTiles = #tileData
-	mapPlayfieldHeightInTiles = #tileData[1]
+	mapPlayfieldWidthInTiles = #mapPositions
+	mapPlayfieldHeightInTiles = #mapPositions[1]
 
 	--Store map original object list size without any extra dynamic objects
 	objectListSize = #mapPropsfield
@@ -204,14 +187,11 @@ function map.generatePlayField()
 
 end
 
-local matTileMapPos = {}
-local mapOffset= {x=0,y=0}
 function map.drawGround(xOff, yOff, size)
 	assert(xOff)
 	assert(yOff)
 	assert(size)
 	zoomLevel = size
-	mapOffset = {x=xOff,y=yOff}
 	--Apply lighting
 	--love.graphics.setColor(tonumber(mapLighting[1]), tonumber(mapLighting[2]), tonumber(mapLighting[3]), 255)
   -- colors 0 to 1  not 0 to 255
@@ -219,33 +199,23 @@ function map.drawGround(xOff, yOff, size)
 
 	-- Draw the flat ground layer for the map, without elevation or props.
 	-- TODO: do evelation
-
-	--matTileMapPos = {}
-	for i in ipairs(tileData) do
-		for j=1,#tileData[i], 1 do
-			local xPos = tileData[i][j][1].x * (tileWidth*zoomLevel)
-			local yPos = tileData[i][j][1].y * (tileWidth*zoomLevel)
+	for i in ipairs(mapPositions) do
+		for j=1,#mapPositions[i], 1 do
+			local xPos = mapPositions[i][j][1].x * (tileWidth*zoomLevel)
+			local yPos = mapPositions[i][j][1].y * (tileWidth*zoomLevel)
 			local xPos, yPos = map.toIso(xPos, yPos)
-			--utils.inspect(mapTextures[tileData[i][j][1].textureKey])
-
-      --matTileMapPos[xPos+xOff] = {}
-			--matTileMapPos[ yPos+yOff] = tileData[i][j]
-
-			local texture = mapTextures[tileData[i][j][1].textureKey].image
 			love.graphics.draw(
-			  texture,
-				xPos+xOff, yPos+yOff-(tileWidth/4),
+			  mapPositions[i][j][1].texture,
+				xPos+xOff, yPos+yOff,
 				0,
-				size, size,
-				tileWidth,tileHeight
-			)
-			love.graphics.print(
-			  "x".. i .." y"..j,
-				xPos+xOff-tileWidth/2,
-				yPos+yOff-tileWidth/2
+				size,
+				size,
+				mapPositions[i][j][1].texture:getWidth()/2,
+				mapPositions[i][j][1].texture:getHeight()/2
 			)
 		end
 	end
+
 end
 
 function map.drawObjects(xOff, yOff, size)
@@ -271,7 +241,7 @@ function map.drawObjects(xOff, yOff, size)
 		-- else
 		-- 	love.graphics.setColor(255, 255, 255, 255)
 		-- end
-		love.graphics.draw(v.texture, xPos+xOff, yPos+yOff-(tileWidth/4), 0, size, size, v.offX, v.offY)
+		love.graphics.draw(v.texture, xPos+xOff, yPos+yOff, 0, size, size, v.offX, v.offY)
 
 		--Update values in order to minimize for loops
 		v.alpha = false
@@ -282,8 +252,8 @@ function map.drawObjects(xOff, yOff, size)
 end
 
 function map.getTileCoordinates2D(i, j)
-	local xP = tileData[i][j][1].x * (tileWidth*zoomLevel)
-	local yP = tileData[i][j][1].y * (tileWidth*zoomLevel)
+	local xP = mapPositions[i][j][1].x * (tileWidth*zoomLevel)
+	local yP = mapPositions[i][j][1].y * (tileWidth*zoomLevel)
 	xP, yP = map.toIso(xP, yP)
 	return xP, yP
 end
@@ -358,8 +328,8 @@ function map.insertNewObject(textureI, isoX, isoY, offXR, offYR)
 end
 
 function map.removeObject(x, y)
-	if #tileData[x][y] > 1 then
-		table.remove(tileData[x][y], #tileData[x][y])
+	if #mapPositions[x][y] > 1 then
+		table.remove(mapPositions[x][y], #mapPositions[x][y])
 	end
 end
 
@@ -429,34 +399,17 @@ function CheckCollision(x1,y1,w1,h1, x2,y2,w2,h2)
 end
 
 function map.getTileByPos(x,y)
-	local width  = ((tileWidth)*zoomLevel)
-	local height = ((tileHeight)*zoomLevel)
+	local width  = (tileWidth*zoomLevel)
+	local height = (tileHeight*zoomLevel)
 
-	print("width: ".. width .. " height: "..height )
-	print("map offset".. mapOffset.x .. ", ".. mapOffset.y)
-  local mx = (x-mapOffset.x)/width
-	local my = (y-mapOffset.y)/width
+	local xIdx = math.floor(x/width)
+	local yIdx = math.floor(y/height)
 
-	local ix = -1* ((mx/2)-my)
-	local iy = (mx/2)+my
-
-	print("iso coords")
-	print("x:"..ix .. " y: "..iy)
-	--(><)
-	function floor(x)
-		x = math.floor(x)
-		if(x < 0 ) then x = x+1 end
-		return x
-	end
-	ix = floor(ix)+1
-	iy = floor(iy)+1
-
-  if(tileData[ix] and tileData[iy]) then
-		print("yes!")
-		tileData[ix][iy][1].textureKey = "water"
-	end
-
-	return {x=ix,y=iy}
+	print("tile index ? ")
+	print(xIdx)
+	print(yIdx)
+  -- truztn tile
+  return mapPositions[xIdx][yIdx]
 
 end
 

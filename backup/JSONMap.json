@@ -1,27 +1,35 @@
 {
-"textures": {
-  "grass": {
-		 "file": "ls.png",
+"textures":
+[
+	{
+		"file": "ls.png",
+		"mnemonic": "grass"
 	},
-	"road":{
+	{
 		"file": "rd.png",
+		"mnemonic": "road"
 	},
-	"roadL":{
+	{
 		"file":"rdl.png",
+		"mnemonic":"roadL"
 	},
-	"roadV":{
+	{
 		"file":"rdv.png",
+		"mnemonic":"roadV"
 	},
-	"roadR":{
+	{
 		"file":"rdr.png",
+		"mnemonic":"roadR"
 	},
-	"roadD":{
+	{
 		"file":"rdrd.png",
+		"mnemonic":"roadD"
 	},
-	"water":{
+	{
 		"file":"water.png",
+		"mnemonic":"water"
 	}
-},
+],
 
 "props":
 [
