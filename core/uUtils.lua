@@ -1,4 +1,6 @@
 local uUtils = {}
+--timerStart = love.timer.getTime()
+--timerEnd = love.timer.getTime()
 
 function uUtils.inspect(anything,deepth)
   if(deepth == nil) then deepth = 10 end

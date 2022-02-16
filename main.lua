@@ -2,9 +2,10 @@
 -- email: pedrorocha@gec.inatel.br
 
 
-isomap = require ("isomap")
-local utils = require ("uUtils")
+isomap = require ("core/isomap")
+local utils = require ("core/uUtils")
 local anim8 = require("lib/anim8/anim8")
+local lovebird = require("lib/lovebird")
 
 
 local winWidth, winHeight = love.graphics.getDimensions( )
@@ -33,10 +34,8 @@ function love.load()
 	love.graphics.setBackgroundColor(0, 0, 69)
 	love.graphics.setDefaultFilter("linear", "linear", 8)
 
-	--Decode JSON map file
-	isomap.decodeJson("JSONMap.json")
-
-	--Generate map from JSON file (loads assets and creates tables)
+  -- load map
+	isomap.load("testmap")
 	isomap.generatePlayField()
 
 	player.spriteSheet = love.graphics.newImage("assets/characters/character1.png")
@@ -53,9 +52,10 @@ function love.load()
 end
 
 function love.update(dt)
-	require("lovebird").update()
+	lovebird.update()
 	local isMoving = false
 	local moveSpeed = 150
+	local updownSpeed = moveSpeed/2
 
 	if love.keyboard.isDown("left") then
 		x = x + moveSpeed*dt
@@ -68,12 +68,12 @@ function love.update(dt)
 		x = x - moveSpeed*dt
 	end
 	if love.keyboard.isDown("up") then
-		y = y+moveSpeed*dt
+		y = y+(updownSpeed)*dt
 		isMoving = true
 		player.anim = player.animations.up
 	end
 	if love.keyboard.isDown("down") then
-		y = y-moveSpeed*dt
+		y = y-updownSpeed*dt
 		isMoving = true
 		player.anim = player.animations.down
 	end
@@ -84,8 +84,6 @@ function love.update(dt)
 		player.anim:update(dt)
 	end
 	zoomL = lerp(zoomL, zoom, 0.05*(dt*300))
-
-
 end
 
 
@@ -100,7 +98,7 @@ function love.draw()
 		local text = "x: "..clickedTile.x .. " y: ".. clickedTile.y
 		love.graphics.print(text,clickedTile.x, clickedTile.y)
 	 end
-	love.graphics.setColor(1, 1, 1) 
+	love.graphics.setColor(1, 1, 1)
   player.anim:draw(player.spriteSheet,posX,posY,0,0.5,0.5)
 	--love.graphics.draw(player.spriteSheet,animationGrid)
 
@@ -115,9 +113,6 @@ function love.draw()
 	love.graphics.print("X: "..math.floor(x).." Y: "..math.floor(y), 0, 48)
 
 	love.graphics.print("tile info:", 0, 60)
-
-
-
 end
 
 function love.mousereleased(x, y, button, isTouch)
