@@ -64,7 +64,6 @@ function map.generatePlayField()
 				map.tileData[colunas][linhas] = { textureKey = tKey, x=xPos, y=yPos }
 		end
 	end
-		utils.inspect(map.tileData)
 end
 
 function map.drawGround(xOff, yOff, size)

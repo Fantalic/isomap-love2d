@@ -17,7 +17,9 @@ function uUtils.inspect(anything,deepth)
       local r =  "{\n"
       for key, value in pairs(input) do
         local res = go(value,lvl+1)
-        r = r..key .. ": " .. res .."\n"
+        if res ~= nil then
+          r = r..key .. ": " .. res .."\n"
+        end
       end
 
       return r .. "}\n"
@@ -25,6 +27,8 @@ function uUtils.inspect(anything,deepth)
         return "function "
     elseif typus == "userdata" then
       return "userdata"
+    elseif typus == "boolean" then
+      if input then return "true" else return "false" end
     else
       return input
     end

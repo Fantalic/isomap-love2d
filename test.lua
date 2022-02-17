@@ -1,9 +1,9 @@
 local json = require("dkjson")
-local testmap =  require "/maps/testmap"
+local world =  require "/maps/world"
 
-testmap.generate()
+world.load(3423450345)
 
-for iy = 1, testmap.sizeY ,1 do
-  local str = json.encode (testmap.ground[iy], { indent = true })
+for iy = 1, world.size ,1 do
+  local str = json.encode (world.map[iy], { indent = true })
   print(str)
 end

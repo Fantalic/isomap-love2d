@@ -1,12 +1,11 @@
 -- code from: https://github.com/Sulunia/isomap-love2d
 -- email: pedrorocha@gec.inatel.br
 
-
-isomap = require ("core/isomap")
-local utils = require ("core/uUtils")
 local anim8 = require("lib/anim8/anim8")
 local lovebird = require("lib/lovebird")
-
+isomap = require ("core/isomap")
+utils = require ("core/uUtils")
+local world = require "maps/world"
 
 local winWidth, winHeight = love.graphics.getDimensions( )
 local clickPosX = 0
@@ -25,6 +24,9 @@ local clickedTile=nil
 
 function love.load()
 	--Variables
+	print("time ? ")
+	print(os.time())
+	world.load(os.time())
 	x = 0
 	y = 0
 	zoomL = 1
