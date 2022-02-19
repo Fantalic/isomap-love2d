@@ -100,6 +100,7 @@ function love.draw()
 		local text = "x: "..clickedTile.x .. " y: ".. clickedTile.y
 		love.graphics.print(text,clickedTile.x, clickedTile.y)
 	 end
+
 	love.graphics.setColor(1, 1, 1)
   player.anim:draw(player.spriteSheet,posX,posY,0,0.5,0.5)
 	--love.graphics.draw(player.spriteSheet,animationGrid)

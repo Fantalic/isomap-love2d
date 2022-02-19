@@ -76,7 +76,13 @@ function map.drawGround(xOff, yOff, size)
 		for j=1,#map.tileData[i], 1 do
 			local xPos = map.tileData[i][j].x * (map.data.tileWidth*zoomLevel)
 			local yPos = map.tileData[i][j].y * (map.data.tileWidth*zoomLevel)
+
 			local xPos, yPos = map.toIso(xPos, yPos)
+      if map.tileData[i][j].offSetY ~= nil then
+        yPos = yPos - 96--map.tileData[i][j].offSetY
+        xPos = xPos 
+      end
+
 
 			local texture = map.data.textures[map.tileData[i][j].textureKey]
 			love.graphics.draw(
@@ -84,7 +90,7 @@ function map.drawGround(xOff, yOff, size)
 				xPos+xOff, yPos+yOff-(map.data.tileWidth/4),
 				0,
 				size, size,
-				map.data.tileWidth,map.data.tileHeight
+				map.data.tileWidth, map.data.tileHeight
 			)
 			love.graphics.print(
 			  "x".. i .." y"..j,
@@ -286,7 +292,8 @@ function map.getTileByPos(x,y)
 
   -- get tile and replace texture
   if(map.tileData[ix] and map.tileData[ix][iy]) then
-		map.tileData[ix][iy].textureKey = "water"
+		map.tileData[ix][iy].textureKey = "tree"
+    map.tileData[ix][iy].offSetY= 128
 	end
 
 	return {x=ix,y=iy}

@@ -12,8 +12,15 @@ tileHeight = 0,
 textures = {},
 
 groundTiles= {
+  poorFighter = {
+    file="poorFighter.png"
+  },
+  tree={
+    file="tree.png",
+    offSetY=128
+  },
   grass= {
-    file= "ls.png",
+    file= "openfield128x64.png",
     type= tileTypes.grass
   },
 	road = {
