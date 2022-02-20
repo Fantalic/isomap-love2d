@@ -117,7 +117,7 @@ function map.wheelmoved(x, y)
 end
 
 function drawTiles()
-  local mOffset = {x=tWidth, y=0.5*tHeight} --{x= 2*tWidth,y=tHeight}
+  local mOffset = {x=0.25*tWidth, y=0.125*tHeight} --{x= 2*tWidth,y=tHeight}
 
   function getPos(i,j)
     local yPos = (i) * tWidth
@@ -141,8 +141,8 @@ function drawTiles()
     -- if i = 1  its the ground. draw grid
       love.graphics.print(
         "x".. j .." y"..i,
-        tilePos[1] - mOffset.x, -- ,
-        tilePos[2] - mOffset.y - tHeight,
+        tilePos[1] - mOffset.x- tWidth/2, -- ,
+        tilePos[2] - mOffset.y - tHeight/2,
         0
       )
   end
@@ -236,7 +236,7 @@ function map.getTileByPos(x,y)
 	iy = floor(iy)+1
 
   -- !!!!!!! TODO: iy +1 .. solve this in draw function with offset somehow...
-	return {x=iy+1,y=ix}
+	return {x=iy,y=ix}
 end
 
 function map.checkTileCollision(tile,object)
