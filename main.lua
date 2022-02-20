@@ -14,7 +14,7 @@ local player = require ("assets/characters/player/player")
 
 local clickPosX = 0
 local clickPosY = 0
-local clickedTile = nil
+local clickedTile = {x=0,y=0}
 
 local pixelSize = 8
 local spriteSrcOffY = 6 * pixelSize
@@ -23,7 +23,6 @@ local animationGrid = nil
 local x = 0
 local y = 0
 
-local clickedTile=nil
 
 function love.load()
 	--Set background to deep blue
@@ -49,7 +48,7 @@ end
 
 function love.draw()
 	isomap.draw(player)
-	
+
   --love.graphics.setColor(1, 1, 1)
 
 	--love.graphics.draw(player.spriteSheet,animationGrid)
@@ -63,7 +62,8 @@ function love.draw()
 	love.graphics.print("Texture memory: "..((info.texturememory/1024)/1024).."mb", 0, 24)
 
 	love.graphics.print("X: "..math.floor(x).." Y: "..math.floor(y), 0, 48)
-	love.graphics.print("tile info:", 0, 60)
+	love.graphics.print("clickd tile x: ".. clickedTile.x .. " y: ".. clickedTile.y, 0, 60)
+
 end
 
 function love.mousereleased(x, y, button, isTouch)
@@ -71,6 +71,9 @@ function love.mousereleased(x, y, button, isTouch)
 	clickPosX = x
 	clickPosY = y
 	clickedTile = isomap.getTileByPos(x,y)
+
+  isomap.insertNewObject(clickedTile.x,clickedTile.y,"tree",1.5)
+--	get tile and replace texture
 
 end
 

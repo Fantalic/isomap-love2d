@@ -6,8 +6,8 @@ version="v0.1",
 lighting="255|255|255",
 sizeX = 30,
 sizeY = 30,
-tileWidth = 0,
-tileHeight = 0,
+tileWidth = 64,
+tileHeight =64,
 
 textures = {},
 
@@ -166,8 +166,8 @@ function map.load()
     count = count +1
     map.textures[key] = love.graphics.newImage("assets/textures/"..texture.file)
     if count == 1 then
-      map.tileWidth = map.textures[key]:getWidth()/2
-      map.tileHeight = map.textures[key]:getHeight()/2
+      --map.tileWidth = map.textures[key]:getWidth()/2
+      --map.tileHeight = map.textures[key]:getHeight()/2
     end
   end
   map.generate()
