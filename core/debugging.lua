@@ -1,0 +1,3 @@
+local debugging = {}
+
+return debugging

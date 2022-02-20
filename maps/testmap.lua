@@ -20,7 +20,7 @@ groundTiles= {
     offSetY=128
   },
   grass= {
-    file= "openfield128x64.png",
+    file= "openfield.png",
     type= tileTypes.grass
   },
 	road = {

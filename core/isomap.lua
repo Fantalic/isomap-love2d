@@ -20,10 +20,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.]]--
 
-local json = require("dkjson")
+local json = require("lib/dkjson")
 local utils = require "core/uUtils"
---TODO: Load dkjson relative to mapDecoder's path.
 
+local zoomL = 1
+local zoom = 1
+local winWidth, winHeight = love.graphics.getDimensions()
 
 local map = {
   data = {},
@@ -33,8 +35,10 @@ local map = {
 		height=0
 	},
 	lighting = {},
-	zoomLevel = 1,
-	offset= {x=0,y=0}
+	zoom = 1,
+	offset= {x=0,y=0},
+  pos = {x=0,y=0},
+  objects={},
 }
 
 function map.load(mapname)
@@ -47,15 +51,7 @@ function map.load(mapname)
 	print("loaded map ")
 	print(map.data.name)
 	map.data.load()
-end
-
---TODO: only draw, what is shown
-function map.generatePlayField()
-	--Add each ground tile to a table according to their texture
-	--TODO: the following should be done on a separate thread. I have not tested the performance of the following lines on a colossal map.
-
-
-	for colunas in ipairs(map.data.ground) do
+  for colunas in ipairs(map.data.ground) do
 		map.tileData[colunas] = {}
 		for linhas in ipairs(map.data.ground[colunas]) do
 				local xPos = linhas
@@ -66,42 +62,92 @@ function map.generatePlayField()
 	end
 end
 
-function map.drawGround(xOff, yOff, size)
-	zoomLevel = size
-	mapOffset = {x=xOff,y=yOff}
+function map.update(dt)
+
+  local rate = 0.05*(dt*300)
+  zoomL = (1-rate)*zoomL + rate*zoom
+
+  map.zoom = zoomL
+end
+
+function map.draw(player)
+  map.pos.x = player.posX
+  map.pos.y = player.posY
+  map.drawGround()
+  player.draw(map.zoom)
+	--map.drawObjects()
+end
+
+function map.wheelmoved(x, y)
+    if y > 0 then
+      zoom = zoom + 0.1
+    elseif y < 0 then
+      zoom = zoom - 0.1
+    end
+
+	if zoom < 0.1 then zoom = 0.1 end
+end
+
+--TODO: only draw, what is shown
+function map.drawGround()
+	zoomLevel = map.zoom
 	--Apply lighting
 	--love.graphics.setColor(tonumber(mapLighting[1]), tonumber(mapLighting[2]), tonumber(mapLighting[3]), 255)
 
+  local zeroTile = getTileByPos(map.pos.x,map.pos.y)
+
 	for i in ipairs(map.tileData) do
 		for j=1,#map.tileData[i], 1 do
-			local xPos = map.tileData[i][j].x * (map.data.tileWidth*zoomLevel)
-			local yPos = map.tileData[i][j].y * (map.data.tileWidth*zoomLevel)
+
+
+
+			local xPos = map.tileData[i][j].x * ((map.data.tileWidth-32)*zoomLevel)
+			local yPos = map.tileData[i][j].y * ((map.data.tileWidth-32)*zoomLevel)
+      --local center = getTileByPos(xPos,yPos)
 
 			local xPos, yPos = map.toIso(xPos, yPos)
-      if map.tileData[i][j].offSetY ~= nil then
-        yPos = yPos - 96--map.tileData[i][j].offSetY
-        xPos = xPos 
-      end
-
 
 			local texture = map.data.textures[map.tileData[i][j].textureKey]
 			love.graphics.draw(
 			  texture,
-				xPos+xOff, yPos+yOff-(map.data.tileWidth/4),
+				xPos+map.pos.x, yPos+map.pos.y,
 				0,
-				size, size,
+				map.zoom, map.zoom,
 				map.data.tileWidth, map.data.tileHeight
 			)
 			love.graphics.print(
 			  "x".. i .." y"..j,
-				xPos+xOff-map.data.tileWidth/2,
-				yPos+yOff-map.data.tileWidth/2
+				xPos+map.pos.x-map.data.tileWidth/2,
+				yPos+map.pos.y-map.data.tileWidth/2
 			)
 		end
 	end
 end
 
-function map.drawObjects(xOff, yOff, size)
+function map.drawObjects()
+
+  for key,obj in pairs(map.objects) do
+			local xPos = obj.pos.x * (map.data.tileWidth*map.zoom)
+			local yPos = obj.pos.y * (map.data.tileWidth*map.zoom)
+			local xPos, yPos = map.toIso(xPos, yPos)
+      yPos = yPos - obj.offSetY--map.tileData[i][j].offSetY -- - 96
+      xPos = xPos - obj.offSetX
+
+			local texture = map.data.textures[obj.textureKey]
+			love.graphics.draw(
+			  texture,
+				xPos+map.pos.x, yPos+map.pos.y, ---(map.data.tileWidth/4),
+				0,
+				map.zoom, map.zoom,
+				map.data.tileWidth, map.data.tileHeight
+			)
+			love.graphics.print(
+			  "x".. i .." y"..j,
+				xPos+map.pos.x-map.data.tileWidth/2,
+				yPos+map.pos.y-map.data.tileWidth/2
+			)
+	end
+
 	--Figure out dynamic object collision
 	-- if #mapPropsfield > objectListSize then
 	-- 	for i=objectListSize+1, #mapPropsfield do
@@ -112,31 +158,12 @@ function map.drawObjects(xOff, yOff, size)
 	-- 		end
 	-- 	end
 	-- end
-	--
-	-- --Sort ZBuffer and draw objects.
-	-- for k,v in spairs(mapPropsfield, function(t,a,b) return t[b].mapY > t[a].mapY end) do
-	-- 	local xPos = v.x * (map.data.tileWidth*zoomLevel)
-	-- 	local yPos = v.y * (map.data.tileWidth*zoomLevel)
-	-- 	local xPos, yPos = map.toIso(xPos, yPos)
-	--
-	-- 	-- if v.alpha then
-	-- 	--love.graphics.setColor(255, 255, 255, 90)
-	-- 	-- else
-	-- 	-- 	love.graphics.setColor(255, 255, 255, 255)
-	-- 	-- end
-	-- 	love.graphics.draw(v.texture, xPos+xOff, yPos+yOff-(map.data.tileWidth/4), 0, size, size, v.offX, v.offY)
-	--
-	-- 	--Update values in order to minimize for loops
-	-- 	v.alpha = false
-	-- 	v.colX = xPos-v.offX
-	-- 	v.colY = yPos-v.offY
-	-- 	v.mapX, v.mapY = map.toIso(v.x, v.y)
-	-- end
+
 end
 
 function map.getTileCoordinates2D(i, j)
-	local xP = map.tileData[i][j].x * (map.data.tileWidth*zoomLevel)
-	local yP = map.tileData[i][j].y * (map.data.tileWidth*zoomLevel)
+	local xP = map.tileData[i][j].x * (map.data.tileWidth*map.zoom)
+	local yP = map.tileData[i][j].y * (map.data.tileWidth*map.zoom)
 	xP, yP = map.toIso(xP, yP)
 	return xP, yP
 end
@@ -163,39 +190,18 @@ function map.toCartesian(x, y)
 	return x, y
 end
 
-function map.insertNewObject(textureI, isoX, isoY, offXR, offYR)
-	--User checks
-	if offXR == nil then offXR = 0 end
-	if offYR == nil then offYR = 0 end
-	assert(textureI, "Invalid texture file for object!")
-	assert(isoX, "No X position for object! (Isometric coordinates)")
-	assert(isoY, "No Y position for object! (Isometric coordinates)")
-	assert(mapPlayfieldWidthInTiles>=isoX, "Insertion coordinates out of map bounds! (X)")
-	assert(mapPlayfieldWidthInTiles>=isoY, "Insertion coordinates out of map bounds! (Y)")
-	local rx, ry = map.toIso(isoX, isoY)
-
-	local colX = isoX * (map.data.tileWidth*zoomLevel)
-	local colY = isoY * (map.data.tileWidth*zoomLevel)
-	colX, colY = map.toIso(colX, colY)
-	--Insert object on map
-	table.insert(
-	  mapPropsdfield,
-		{
-			texture=textureI,
-			x=isoY,
-			y=isoX+0.001,
-			offX=offXR,
-			offY = offYR,
-			mapY = ry,
-			mapX = rx,
-			colX = colX,
-			colY = colY,
-			width = textureI:getWidth(),
-			height = textureI:getHeight(),
-			alpha = false
-		}
-	)
-
+local idCount = 0
+function map.insertNewObject(xPos,yPos,textureKey,offSetX,offSetY)
+  idCound = idCount+1
+  local object = {
+    key = idCount,
+    xPos=xPos,
+    yPos=yPos,
+    textureKey=textureKey,
+    offSetX=offSetX,
+    offSetY=offSetY
+  }
+  map.objects[idCount] = object
 end
 
 function map.removeObject(x, y)
@@ -277,9 +283,10 @@ function floor(x)
 end
 
 function map.getTileByPos(x,y)
+  local mapOffset = {x=map.pos.x,y=map.pos.y}
 	-- get tile dimension
-	local width  = ((map.data.tileWidth)*zoomLevel)
-	local height = ((map.data.tileHeight)*zoomLevel)
+	local width  = ((map.data.tileWidth)*map.zoom)
+	local height = ((map.data.tileHeight)*map.zoom)
 	-- subtract offset and divide by tile width
   local mx = (x-mapOffset.x)/width
 	local my = (y-mapOffset.y)/width
@@ -291,17 +298,17 @@ function map.getTileByPos(x,y)
 	iy = floor(iy)+1
 
   -- get tile and replace texture
-  if(map.tileData[ix] and map.tileData[ix][iy]) then
-		map.tileData[ix][iy].textureKey = "tree"
-    map.tileData[ix][iy].offSetY= 128
-	end
+  -- if(map.tileData[ix] and map.tileData[ix][iy]) then
+	-- 	map.tileData[ix][iy].textureKey = "tree"
+  --   map.tileData[ix][iy].offSetY= 128
+	-- end
 
 	return {x=ix,y=iy}
 end
 
 function map.checkTileCollision(tile,object)
-	local width  = (map.data.tileWidth*zoomLevel)
-	local height = (map.data.tileHeight*zoomLevel)
+	local width  = (map.data.tileWidth*map.zoom)
+	local height = (map.data.tileHeight*map.zoom)
 	local dx = Math.abs(x - cellCenterX)
 	local dy = Math.abs(y - cellCenterY)
 
