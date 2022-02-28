@@ -5,12 +5,16 @@
 -- email: shengluChan@protonmail.com
 
 --debugging under : http://127.0.0.1:8000
+
 local lovebird = require("lib/lovebird")
 
+local grid = require ("core/isogrid")
 local isomap = require ("core/isomap")
 local utils = require ("core/uUtils")
 local world = require "maps/world"
 local player = require ("assets/characters/player/player")
+
+local rigitbody = require "core/rigitbody"
 
 local clickPosX = 0
 local clickPosY = 0
@@ -23,37 +27,41 @@ local animationGrid = nil
 local x = 0
 local y = 0
 
-
+local axeSheet = nil
 function love.load()
 	--Set background to deep blue
 	love.graphics.setBackgroundColor(0, 0, 69)
 	love.graphics.setDefaultFilter("linear", "linear", 8)
 
 	-- load random world (minimap)
-	-- world.load(os.time())
+	 --world.load(os.time())
 
   -- load map
-	isomap.load("testmap")
+	isomap.load("test/testmap")
+	player:load()
 
-	player.load()
+	rigitbody.load()
+
+  --axeSheet = love.graphics.newImage("assets/items/axeSheet.png")
+	isomap.insertNewObject(10,10,"axe")
+	--grid.load()
 end
 
 function love.update(dt)
 	-- debuging under : http://127.0.0.1:8000
 	--lovebird.update()
-	player.update(dt)
+
+	player:update(dt)
 	isomap.update(dt)
+	--rigitbody:update(dt)
 end
 
 
 function love.draw()
-	isomap.draw(player)
+	--grid.draw()
+	isomap:draw(player)
+	--rigitbody:draw()
 
-  --love.graphics.setColor(1, 1, 1)
-
-	--love.graphics.draw(player.spriteSheet,animationGrid)
-
-	--love.graphics.setColor(1, 1, 0)
 	love.graphics.rectangle("fill", clickPosX,clickPosY, pixelSize,pixelSize)
 
 	info = love.graphics.getStats()
@@ -71,10 +79,7 @@ function love.mousereleased(x, y, button, isTouch)
 	clickPosX = x
 	clickPosY = y
 	clickedTile = isomap.getTileByPos(x,y)
-
-  isomap.insertNewObject(clickedTile.x,clickedTile.y,"tree",1.5)
---	get tile and replace texture
-
+  isomap.insertNewObject(clickedTile.x,clickedTile.y,"tree",3.5)
 end
 
 function love.wheelmoved(x, y)

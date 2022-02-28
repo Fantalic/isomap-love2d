@@ -1,0 +1,44 @@
+{
+  "poorFighter" : {
+  "file":"poorFighter.png"
+  },
+  "tree":{
+    "file":"tree.png",
+    "collider":"treeCollider.png",
+    "flip":3.65
+  },
+  "grass": {
+    "file": "openfield.png",
+    "type": "grass"
+  },
+  "road": {
+    "file": "rd.png",
+    "type" : "road"
+  },
+  "roadV":{
+    "file":"rdv.png",
+    "type" : "road"
+  },
+  "roadL":{
+    "file":"rdl.png",
+    "type" : "road"
+  },
+  "roadR":{
+    "file":"rdr.png",
+    "type" : "road"
+  },
+  "roadD":{
+    "file":"rdrd.png",
+    "type" : "road"
+  },
+  "water":{
+    "file":"water.png",
+    "type" : "water"
+  },
+  "axe":{
+    "file": "axeSheet.png",
+    "type": "item",
+    "width": 48,
+    "height": 32
+  }
+}

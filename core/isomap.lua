@@ -84,12 +84,11 @@ function map.update(dt)
 
 end
 
-function map.draw(player)
+function map:draw(player)
   map.pos.x = player.posX
   map.pos.y = player.posY
+  player.speed = zoomL * zoomL
   map.player = player
-
-  map.player.speed = zoomL * zoomL
 
   posY = love.graphics.getHeight( )/2 + (player.height+tHeight)*map.zoom
   posX = love.graphics.getWidth( )/2  + (player.width+tWidth)*map.zoom
@@ -118,18 +117,46 @@ end
 
 function drawTiles()
   local mOffset = {x=0.25*tWidth, y=0.125*tHeight} --{x= 2*tWidth,y=tHeight}
+  local windowTileSizeX = 12 *(1/map.zoom)
+  local windowTileSizeY = 12*(1/map.zoom)
+  local zeroPointX = 256    + tWidth*2
+  local zeroPointY = 0--256* 2 + tHeight*2
+  -- zoom ausgleich
+  --mOffset.x = mOffset.x - (1/map.zoom)*tWidth*4
+  --mOffset.y = mOffset.y - (1/map.zoom)*tHeight*2
+  local zeroTile = map.getTileByPos(zeroPointX, zeroPointY) -- (map.pos.x,map.pos.y)
+  local drawAfterCharakters= {}
 
-  function getPos(i,j)
-    local yPos = (i) * tWidth
-    local xPos = (j) * tHeight
+
+  function getPos(j,i)
+    local yPos = (j) * tWidth
+    local xPos = (i) * tHeight
     local xPos, yPos = map.toIso(xPos, yPos)
-    return {xPos+map.pos.x, yPos+map.pos.y}
+    return {
+      xPos+map.pos.x,--36*(1/map.zoom)*1.5,
+      yPos+map.pos.y,--16*(1/map.zoom)*1.5
+    }
+  end
+
+  local iterateVisibleTiles = function(funcX,funcY)
+    for i = zeroTile.y, zeroTile.y + ( windowTileSizeY),1 do
+      if map.tileData[i] then
+        if(funcY ~=nil) then funcY(i) end
+        for j = zeroTile.x,zeroTile.x + (windowTileSizeX),1 do
+          if map.tileData[i][j] then
+            funcX(i,j)
+          end
+        end
+      end
+    end
   end
 
   local drawGround = function (i,j)
     local tilePos = getPos(i,j)
     local ground = map.tileData[i][j][1]
     local texture = map.data.textures[ground.textureKey]
+    assert(texture, "ERROR(isomap.drawTiles-drawGround): texture ".. ground.textureKey .. "  is nil !")
+
     love.graphics.draw(
       texture,
       tilePos[1]-mOffset.x - ground.offSetX,
@@ -139,59 +166,94 @@ function drawTiles()
       tWidth, tHeight
     )
     -- if i = 1  its the ground. draw grid
-      love.graphics.print(
-        "x".. j .." y"..i,
-        tilePos[1] - mOffset.x- tWidth/2, -- ,
-        tilePos[2] - mOffset.y - tHeight/2,
-        0
-      )
+    love.graphics.print(
+      "x".. j .." y"..i,
+      tilePos[1] - mOffset.x- tWidth/2, -- ,
+      tilePos[2] - mOffset.y - tHeight/2,
+      0
+    )
   end
 
   local drawObjects = function(i,j)
-    local tilePos = getPos(i,j)
 
-    for idx = 2, #map.tileData[i][j],1 do
+    for idx = 2, #map.tileData[i][j], 1 do
       local obj = map.tileData[i][j][idx]
       if(obj ~= nil )then
-        local texture = map.data.textures[obj.textureKey]
-        love.graphics.draw(
-          texture,
-          tilePos[1]-mOffset.x - obj.offSetX,
-          tilePos[2]-mOffset.y - obj.offSetY - obj.height*tHeight,--.x+map.pos.y
-          0,
-          map.zoom, map.zoom,
-          tWidth, tHeight
-        )
+        local tilePos = getPos(i,j)
+        local objHeight = tilePos[2]-mOffset.y  - obj.height*tHeight
+        local flipHeight = 0
+        if(obj.flip) then
+           flipHeight = objHeight - obj.flip * tHeight
+           if  map.player.posY  > -flipHeight then
+               table.insert(drawAfterCharakters,obj)
+           else
+        end
+
+          local texture = map.data.textures[obj.textureKey]
+          love.graphics.draw(
+            texture,
+            tilePos[1]-mOffset.x, --- obj.offSetY*map.zoom,
+            tilePos[2]-mOffset.y  - obj.height*tHeight,--.x+map.pos.y
+            0,
+            map.zoom, map.zoom,
+            obj.width or tWidth, obj.height or tHeight
+          )
+        end
       end
-    end
-    if (map.player.tPosI == i and map.player.tPosJ == j) then
-      map.player.draw(map.zoom)
-    end
+     end
+     if (map.player.tPosI == i and map.player.tPosJ == j) then
+        map.player:draw(map.zoom)
+      end
+
   end
+
   iterateVisibleTiles(drawGround)
   iterateVisibleTiles(drawObjects)
+  for idx = 1, #drawAfterCharakters, 1 do
+    local obj = drawAfterCharakters[idx]
+    local tilePos = getPos(obj.tyPos,obj.txPos)
+    local texture = map.data.textures[obj.textureKey]
+    love.graphics.draw(
+      texture,
+      tilePos[1]-mOffset.x ,
+      tilePos[2]-mOffset.y - obj.height*tHeight,--.x+map.pos.y
+      0,
+      map.zoom, map.zoom,
+      tWidth, tHeight
+    )
+  end
 end
 
 local idCount = 0
 function map.insertNewObject(txPos,tyPos,textureKey,height,offSetX,offSetY)
   idCound = idCount+1
   if(height==nil) then height = 0 end
-  if(offSetX == nil) then offSetX = 0 end
-  if(offSetY == nil) then offSetY = 0 end
+  if(offSetX == nil) then
+    offSetX = map.data.objects[textureKey].width
+  end
+  if(offSetY == nil) then
+    offSetY = map.data.objects[textureKey].height
+  end
   local object = {
     key = idCount,
-    txPos=txPos,
-    tyPos=tyPos,
+    txPos=txPos, -- x =j
+    tyPos=tyPos, -- y = i
     textureKey=textureKey,
     offSetX=offSetX,
     offSetY=offSetY,
-    height=height
+    height=height or map.data.objects[textureKey].height,
+    width= map.data.objects[textureKey].width,
+    collider = map.data.objects[textureKey].collider,
+    flip = map.data.objects[textureKey].flip
   }
   map.objectDict[idCount] = object
   if(map.tileData[tyPos] == nil) then map.tileData[tyPos] ={} end
   if(map.tileData[tyPos][txPos] == nil) then map.tileData[tyPos] ={} end
-  local index = #map.tileData[tyPos][txPos]+1
-  map.tileData[tyPos][txPos][index] = object
+
+  if(map.tileData[tyPos] and map.tileData[tyPos][txPos]) then
+    local index = #map.tileData[tyPos][txPos]+1
+    map.tileData[tyPos][txPos][index] = object
+  end
 end
 
 function map.getTileCoordinates2D(i, j)
@@ -199,25 +261,6 @@ function map.getTileCoordinates2D(i, j)
 	local yP = map.tileData[i][j].y * (map.data.tileWidth*map.zoom)
 	xP, yP = map.toIso(xP, yP)
 	return xP, yP
-end
-
-function iterateVisibleTiles(func)
-  local windowTileSizeX = 16*map.zoom*1.5
-  local windowTileSizeY = 16*map.zoom*1.5
-  local zeroPointX = winWidth - 8*tWidth *(1/map.zoom)     --. !!!! warum ist das nicht konstant ?? -- + winWidth/2
-  local zeroPointY = winHeight - 8* tHeight*(1/map.zoom) --    eigentlich map.pos.y
-
-  local zeroTile = map.getTileByPos(zeroPointX,zeroPointY) -- (map.pos.x,map.pos.y)
-
-  for i = zeroTile.y, zeroTile.y + ( windowTileSizeY),1 do
-    if map.tileData[i] then
-      for j = zeroTile.x,zeroTile.x + (windowTileSizeX),1 do
-        if map.tileData[i][j] then
-          func(i,j)
-        end
-      end
-    end
-  end
 end
 
 function map.getTileByPos(x,y)

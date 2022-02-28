@@ -1,6 +1,26 @@
+local json = require "lib/dkjson"
+
 local uUtils = {}
+
+function uUtils.round(x)
+  if(x+0.5> x+1 ) then
+    return x+1
+  else
+    return math.floor(x)
+  end
+end
 --timerStart = love.timer.getTime()
 --timerEnd = love.timer.getTime()
+function uUtils.loadFile(path)
+  assert(path, "Filename is nil!")
+	if not love.filesystem.isFile(path) then
+    error("Given filename is not a file! Is it a directory? Does it exist?")
+  end
+	--Reads file
+	mapJson = love.filesystem.read(path)
+	--Attempts to decode file
+	return json.decode(mapJson)
+end
 
 function uUtils.inspect(anything,deepth)
   if(deepth == nil) then deepth = 10 end
