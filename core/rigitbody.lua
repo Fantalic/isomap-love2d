@@ -25,16 +25,16 @@ function getJointPos(texture,idColor)
      -- end
      if(0 == r-idColor[1] and g == idColor[2] ) -- and b == idColor[3] and a == idColor[4]
      then
-       print("joint found!")
+       -- print("joint found!")
        return {x=x,y=y}
      end
    end
   end
-  print("joint color: ")
-  print(idColor[1])
-  print(idColor[2])
-  print(idColor[3])
-  print(idColor[4])
+  -- print("joint color: ")
+  -- print(idColor[1])
+  -- print(idColor[2])
+  -- print(idColor[3])
+  -- print(idColor[4])
 
 end
 

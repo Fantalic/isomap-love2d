@@ -48,6 +48,7 @@ local map = {
 
 local tWidth = 0
 local tHeight = 0
+local blockedTiles  = {}
 
 function map.load(mapname)
 	local path = "maps/"..mapname
@@ -72,7 +73,7 @@ function map.load(mapname)
 	end
 end
 
-function map.update(dt)
+function map:update(dt)
 
   local rate = 0.05*(dt*300)
   zoomL = (1-rate)*zoomL + rate*zoom
@@ -115,8 +116,10 @@ function map.wheelmoved(x, y)
   print(zoom)
 end
 
+
 function drawTiles()
-  local mOffset = {x=0.25*tWidth, y=0.125*tHeight} --{x= 2*tWidth,y=tHeight}
+   --{x= 2*tWidth,y=tHeight}
+  local mOffset = {x=0.25*tWidth, y=0.125*tHeight}
   local windowTileSizeX = 12 *(1/map.zoom)
   local windowTileSizeY = 12*(1/map.zoom)
   local zeroPointX = 256    + tWidth*2
@@ -126,6 +129,7 @@ function drawTiles()
   --mOffset.y = mOffset.y - (1/map.zoom)*tHeight*2
   local zeroTile = map.getTileByPos(zeroPointX, zeroPointY) -- (map.pos.x,map.pos.y)
   local drawAfterCharakters= {}
+  blockedTiles = {}
 
 
   function getPos(j,i)
@@ -175,40 +179,35 @@ function drawTiles()
   end
 
   local drawObjects = function(i,j)
-
     for idx = 2, #map.tileData[i][j], 1 do
       local obj = map.tileData[i][j][idx]
       if(obj ~= nil )then
+        --print((obj.height/map.data.tileHeight))
+        table.insert(blockedTiles,{i=i,j=j})
         local tilePos = getPos(i,j)
         local objHeight = tilePos[2]-mOffset.y  - obj.height*tHeight
-        local flipHeight = 0
-        if(obj.flip) then
-           flipHeight = objHeight - obj.flip * tHeight
-           if  map.player.posY  > -flipHeight then
-               table.insert(drawAfterCharakters,obj)
-           else
-        end
 
-          local texture = map.data.textures[obj.textureKey]
-          love.graphics.draw(
-            texture,
-            tilePos[1]-mOffset.x, --- obj.offSetY*map.zoom,
-            tilePos[2]-mOffset.y  - obj.height*tHeight,--.x+map.pos.y
-            0,
-            map.zoom, map.zoom,
-            obj.width or tWidth, obj.height or tHeight
-          )
-        end
+        local texture = map.data.textures[obj.textureKey]
+        love.graphics.draw(
+          texture,
+          tilePos[1] -mOffset.y - tWidth/2 +(obj.height/map.data.tileHeight) *(tWidth/2), --- obj.offSetY*map.zoom,
+          -- tHeight/2 to get global tile offset (? or center) + object height for texture offset  and last for zoom
+          tilePos[2]  -mOffset.x  - tHeight/2 +(obj.width/map.data.tileWidth) *(tHeight/2) ,
+          0,
+          map.zoom, map.zoom,
+          obj.width or tWidth, obj.height or tHeight
+        )
       end
      end
-     if (map.player.tPosI == i and map.player.tPosJ == j) then
-        map.player:draw(map.zoom)
-      end
-
+     if(map.player.tPosI == i and map.player.tPosJ == j) then
+       map.player:draw(zoomL)
+     end
   end
 
   iterateVisibleTiles(drawGround)
   iterateVisibleTiles(drawObjects)
+
+
   for idx = 1, #drawAfterCharakters, 1 do
     local obj = drawAfterCharakters[idx]
     local tilePos = getPos(obj.tyPos,obj.txPos)
@@ -224,31 +223,24 @@ function drawTiles()
   end
 end
 
-local idCount = 0
+local objId = 0
 function map.insertNewObject(txPos,tyPos,textureKey,height,offSetX,offSetY)
-  idCound = idCount+1
-  if(height==nil) then height = 0 end
-  if(offSetX == nil) then
-    offSetX = map.data.objects[textureKey].width
-  end
-  if(offSetY == nil) then
-    offSetY = map.data.objects[textureKey].height
-  end
+  objId = objId+1
   local object = {
-    key = idCount,
+    id = objId,
     txPos=txPos, -- x =j
     tyPos=tyPos, -- y = i
     textureKey=textureKey,
-    offSetX=offSetX,
-    offSetY=offSetY,
-    height=height or map.data.objects[textureKey].height,
+    offSetX=offSetX or 0 ,
+    offSetY=offSetY or 0 ,
+    height=map.data.objects[textureKey].height,
     width= map.data.objects[textureKey].width,
     collider = map.data.objects[textureKey].collider,
-    flip = map.data.objects[textureKey].flip
+    --flip = map.data.objects[textureKey].flip
   }
-  map.objectDict[idCount] = object
+  map.objectDict[objId] = object
   if(map.tileData[tyPos] == nil) then map.tileData[tyPos] ={} end
-  if(map.tileData[tyPos][txPos] == nil) then map.tileData[tyPos] ={} end
+  if(map.tileData[tyPos][txPos] == nil) then map.tileData[tyPos][txPos] ={} end
 
   if(map.tileData[tyPos] and map.tileData[tyPos][txPos]) then
     local index = #map.tileData[tyPos][txPos]+1
@@ -264,6 +256,7 @@ function map.getTileCoordinates2D(i, j)
 end
 
 function map.getTileByPos(x,y)
+  if(x == nil or y== nil) then return {0,0} end
   local mapOffset = {x=map.pos.x,y=map.pos.y}
 	-- get tile dimension
 	local width  = ((map.data.tileWidth)*map.zoom)
@@ -279,7 +272,7 @@ function map.getTileByPos(x,y)
 	iy = floor(iy)+1
 
   -- !!!!!!! TODO: iy +1 .. solve this in draw function with offset somehow...
-	return {x=iy,y=ix}
+	return {x=iy,y=ix} -- i, j
 end
 
 function map.checkTileCollision(tile,object)
@@ -293,6 +286,20 @@ function map.checkTileCollision(tile,object)
 	if (dx / (cellWidth * 0.5) + dy  (cellHeight * 0.5) <= 1) then
 
 	end
+end
+
+function map:isTileAccesable(posX,posY)
+  local accesable =true
+  local tile  = map.getTileByPos(posX,posY)
+  print("j:"..tile.y .. " i: " ..tile.x)
+
+  for tIdx in pairs(blockedTiles)do
+    if(blockedTiles[tIdx].j == tile.x and  blockedTiles[tIdx].i == tile.y) then
+      accesable = false
+    end
+  end
+  print(accesable)
+  return accesable
 end
 
 --This next function had the underscore added to avoid collisions with

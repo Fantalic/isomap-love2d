@@ -43,7 +43,7 @@ function love.load()
 	rigitbody.load()
 
   --axeSheet = love.graphics.newImage("assets/items/axeSheet.png")
-	isomap.insertNewObject(10,10,"axe")
+	isomap.insertNewObject(2,2,"axe")
 	--grid.load()
 end
 
@@ -51,8 +51,8 @@ function love.update(dt)
 	-- debuging under : http://127.0.0.1:8000
 	--lovebird.update()
 
-	player:update(dt)
-	isomap.update(dt)
+	player:update(dt,isomap)
+	isomap:update(dt)
 	--rigitbody:update(dt)
 end
 
@@ -79,7 +79,7 @@ function love.mousereleased(x, y, button, isTouch)
 	clickPosX = x
 	clickPosY = y
 	clickedTile = isomap.getTileByPos(x,y)
-  isomap.insertNewObject(clickedTile.x,clickedTile.y,"tree",3.5)
+  isomap.insertNewObject(clickedTile.x,clickedTile.y,"tree",0)
 end
 
 function love.wheelmoved(x, y)

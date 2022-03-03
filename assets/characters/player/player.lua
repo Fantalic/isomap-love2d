@@ -47,58 +47,73 @@ function player:load()
   return player
 end
 
-
-function player:update(dt)
+function player:update(dt,map)
   moveSpeed = self.speed * speedFaktor
   updownSpeed = self.speed * speedFaktorUD
   self.isMoving = false
 
  -- first animation level :
+ local x = self.posX or 0
+ local y = self.posY or 0
   if love.keyboard.isDown("down") then
-    self.currentAction = self.actions.walking
-
-    self.posY = self.posY-updownSpeed*dt
     self.isMoving = true
+    self.currentAction = self.actions.walking
+     y = y-updownSpeed*dt
     if     love.keyboard.isDown("left") then
       self.currentAction:setActivLayers({2})
-      self.posX = self.posX + moveSpeed*dt
+      x = x + moveSpeed*dt
     elseif love.keyboard.isDown("right") then
       self.currentAction:setActivLayers({8})
-      self.posX = self.posX - moveSpeed*dt
+      x = x - moveSpeed*dt
     else
       self.currentAction:setActivLayers({1})
     end
 
   elseif love.keyboard.isDown("up") then
+    self.isMoving = true
     self.currentAction = self.actions.walking
 
-    self.posY = self.posY+updownSpeed*dt
-    self.isMoving = true
+    y = y+updownSpeed*dt
     if     love.keyboard.isDown("left") then
       self.currentAction:setActivLayers({4})
-      self.posX = self.posX + moveSpeed*dt
+      x = x + moveSpeed*dt
     elseif love.keyboard.isDown("right") then
       self.currentAction:setActivLayers({6})
-      self.posX = self.posX - moveSpeed*dt
+      x = x - moveSpeed*dt
     else
       self.currentAction:setActivLayers({5})
     end
 
   elseif love.keyboard.isDown("left") then
-    self.currentAction = self.actions.walking
-
-    self.posX = self.posX + moveSpeed*dt
     self.isMoving = true
+    self.currentAction = self.actions.walking
     self.currentAction:setActivLayers({3})
+    x = x+ moveSpeed*dt
 
   elseif love.keyboard.isDown("right") then
-    self.currentAction = self.actions.walking
-
     self.isMoving = true
+    self.currentAction = self.actions.walking
     self.currentAction:setActivLayers({7})
-    self.posX = self.posX - moveSpeed*dt
+    x = x - moveSpeed*dt
+  end
 
-  elseif love.keyboard.isDown("e") then
+
+  local tWidth = (map.data.tileWidth)*map.zoom
+  local tHeight = (map.data.tileHeight)*map.zoom
+  posY = love.graphics.getHeight( )/2 + (self.height+tHeight)*map.zoom
+  posX = love.graphics.getWidth( )/2  + (self.width+tWidth)*map.zoom
+  local pos = map.getTileByPos(posX,posY)
+
+  self.tPosI = pos.y
+  self.tPosJ = pos.x-2
+  if(x~=nil and y~=nil and self.isMoving and map:isTileAccesable(self.tPosJ,self.tPosI))then
+    self.posX = x
+    self.posY = y
+  end
+
+
+
+  if not self.isMoving and love.keyboard.isDown("e") then
     self.currentAction = self.actions.grabbing
     --local b = a:clone():flipV()
     self.currentAction:setActivLayers({1,2})
