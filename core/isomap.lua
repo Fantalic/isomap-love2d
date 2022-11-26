@@ -44,6 +44,7 @@ local map = {
   objects={},
   objectDict = {},
   player = nil
+
 }
 
 local tWidth = 0
@@ -81,8 +82,6 @@ function map:update(dt)
 
   tWidth = (map.data.tileWidth)*zoomL
   tHeight = (map.data.tileHeight)*zoomL
-
-
 end
 
 function map:draw(player)
@@ -225,6 +224,7 @@ end
 
 local objId = 0
 function map.insertNewObject(txPos,tyPos,textureKey,height,offSetX,offSetY)
+  -- adds object infos to tileData
   objId = objId+1
   local object = {
     id = objId,
