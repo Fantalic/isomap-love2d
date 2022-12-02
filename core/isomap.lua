@@ -29,8 +29,9 @@ SOFTWARE.]]--
 local json = require("lib/dkjson")
 local utils = require "core/uUtils"
 
-local zoomL = 1
-local zoom = 1
+local mouse = {}
+-- TODO: mouse class
+
 local winWidth, winHeight = love.graphics.getDimensions()
 
 local map = {
@@ -72,51 +73,36 @@ function map.load(mapname)
         } }
 		end
 	end
+  tWidth = (map.data.tileWidth)*map.zoom
+  tHeight = (map.data.tileHeight)*map.zoom
 end
 
 function map:update(dt)
+end
 
-  local rate = 0.05*(dt*300)
-  zoomL = (1-rate)*zoomL + rate*zoom
-  map.zoom = zoomL
+function map:wheelmoved(x, y)
+    if y > 0 then
+      self.zoom = self.zoom + 0.1
+    elseif y < 0 then
+      self.zoom = self.zoom - 0.1
+    end
 
-  tWidth = (map.data.tileWidth)*zoomL
-  tHeight = (map.data.tileHeight)*zoomL
+	if self.zoom < 0.1 then self.zoom = 0.1 end
+  tWidth = (map.data.tileWidth)*self.zoom
+  tHeight = (map.data.tileHeight)*self.zoom
 end
 
 function map:draw(player)
   map.pos.x = player.posX
   map.pos.y = player.posY
-  player.speed = zoomL * zoomL
+  player.speed = self.zoom * self.zoom * 2
   map.player = player
 
-  posY = love.graphics.getHeight( )/2 + (player.height+tHeight)*map.zoom
-  posX = love.graphics.getWidth( )/2  + (player.width+tWidth)*map.zoom
+  self:drawTiles()
 
-  local pos = map.getTileByPos(posX,posY)
-
-  map.player.tPosI = pos.y
-  map.player.tPosJ = pos.x-2
-
-  drawTiles()
-  --map.drawObjects()
-	--map.drawObjects()
 end
 
-function map.wheelmoved(x, y)
-    if y > 0 then
-      zoom = zoom + 0.1
-    elseif y < 0 then
-      zoom = zoom - 0.1
-    end
-
-	if zoom < 0.1 then zoom = 0.1 end
-  print("zoom")
-  print(zoom)
-end
-
-
-function drawTiles()
+function map:drawTiles()
    --{x= 2*tWidth,y=tHeight}
   local mOffset = {x=0.25*tWidth, y=0.125*tHeight}
   local windowTileSizeX = 12 *(1/map.zoom)
@@ -132,12 +118,13 @@ function drawTiles()
 
 
   function getPos(j,i)
-    local yPos = (j) * tWidth
+    -- get screen postions(?) by iso-grid coordinates
+    local yPos = (j) * tWidth - tWidth
     local xPos = (i) * tHeight
     local xPos, yPos = map.toIso(xPos, yPos)
     return {
-      xPos+map.pos.x,--36*(1/map.zoom)*1.5,
-      yPos+map.pos.y,--16*(1/map.zoom)*1.5
+      xPos+map.pos.x - mOffset.x,--36*(1/map.zoom)*1.5,
+      yPos+map.pos.y - mOffset.y--16*(1/map.zoom)*1.5
     }
   end
 
@@ -160,10 +147,14 @@ function drawTiles()
     local texture = map.data.textures[ground.textureKey]
     assert(texture, "ERROR(isomap.drawTiles-drawGround): texture ".. ground.textureKey .. "  is nil !")
 
+    -- TODO: GET CORRECT CLICK POSTION !!!! ( getTilePos)
+    -- correction offest to fit click to isoPos function (getTileByPos)
+    --local cX,cY = map.toIso(tWidth/2,tHeight/2)
+
     love.graphics.draw(
       texture,
-      tilePos[1]-mOffset.x - ground.offSetX,
-      tilePos[2]-mOffset.y - ground.offSetY - ground.height*tHeight,--.x+map.pos.y
+      tilePos[1],
+      tilePos[2],--.x+map.pos.y
       0,
       map.zoom, map.zoom,
       tWidth, tHeight
@@ -171,60 +162,90 @@ function drawTiles()
     -- if i = 1  its the ground. draw grid
     love.graphics.print(
       "x".. j .." y"..i,
-      tilePos[1] - mOffset.x- tWidth/2, -- ,
-      tilePos[2] - mOffset.y - tHeight/2,
-      0
+      tilePos[1]  + tWidth, -- ,
+      tilePos[2]  + tHeight/2,
+      0,
+      map.zoom, map.zoom,
+      tWidth, tHeight
     )
   end
 
   local drawObjects = function(i,j)
     for idx = 2, #map.tileData[i][j], 1 do
       local obj = map.tileData[i][j][idx]
-      if(obj ~= nil )then
+      if(obj ~= nil ) then
         --print((obj.height/map.data.tileHeight))
         table.insert(blockedTiles,{i=i,j=j})
         local tilePos = getPos(i,j)
-        local objHeight = tilePos[2]-mOffset.y  - obj.height*tHeight
+        local objHeight = tilePos[2]  - obj.height*tHeight
 
         local texture = map.data.textures[obj.textureKey]
+        local objTileHeight = (obj.height/map.data.tileHeight)* tHeight
+        local objTileWidth = (obj.width/map.data.tileWidth)* tWidth
+
+
+
+        local myColor = {0, 1, 0, 1}
+      	love.graphics.setColor(myColor)
+
         love.graphics.draw(
           texture,
-          tilePos[1] -mOffset.y - tWidth/2 +(obj.height/map.data.tileHeight) *(tWidth/2), --- obj.offSetY*map.zoom,
-          -- tHeight/2 to get global tile offset (? or center) + object height for texture offset  and last for zoom
-          tilePos[2]  -mOffset.x  - tHeight/2 +(obj.width/map.data.tileWidth) *(tHeight/2) ,
+          tilePos[1] + tWidth -objTileWidth , --- obj.offSetY*map.zoom,
+          tilePos[2] + tHeight/2 - objTileHeight/2,
           0,
           map.zoom, map.zoom,
-          obj.width or tWidth, obj.height or tHeight
+          tWidth,tHeight
         )
+        love.graphics.setColor({1,1,1,1})
       end
      end
      if(map.player.tPosI == i and map.player.tPosJ == j) then
-       map.player:draw(zoomL)
+       map.player:draw(self.zoom)
      end
   end
 
   iterateVisibleTiles(drawGround)
   iterateVisibleTiles(drawObjects)
 
-
-  for idx = 1, #drawAfterCharakters, 1 do
-    local obj = drawAfterCharakters[idx]
-    local tilePos = getPos(obj.tyPos,obj.txPos)
-    local texture = map.data.textures[obj.textureKey]
-    love.graphics.draw(
-      texture,
-      tilePos[1]-mOffset.x ,
-      tilePos[2]-mOffset.y - obj.height*tHeight,--.x+map.pos.y
-      0,
-      map.zoom, map.zoom,
-      tWidth, tHeight
-    )
-  end
+  -- for idx = 1, #drawAfterCharakters, 1 do
+  --   local obj = drawAfterCharakters[idx]
+  --   local tilePos = getPos(obj.tyPos,obj.txPos)
+  --   local texture = map.data.textures[obj.textureKey]
+  --
+  --   local objTileHeight = obj.height*tHeight
+  --
+  --   love.graphics.draw(
+  --     texture,
+  --     tilePos[1]-mOffset.x ,
+  --     tilePos[2]-mOffset.y - objTileHeight ,--.x+map.pos.y
+  --     0,
+  --     map.zoom, map.zoom,
+  --     tWidth, tHeight
+  --   )
+  -- end
 end
 
 local objId = 0
+
+function map.drawRect(txPos,tyPos)
+  objId = objId+1
+  local object = {
+    id = objId,
+    txPos=txPos, -- x =j
+    tyPos=tyPos, -- y = i
+    textureKey=textureKey,
+    offSetX=offSetX or 0 ,
+    offSetY=offSetY or 0 ,
+    height=map.data.objects[textureKey].height,
+    width= map.data.objects[textureKey].width,
+    collider = map.data.objects[textureKey].collider,
+    --flip = map.data.objects[textureKey].flip
+  }
+end
+
 function map.insertNewObject(txPos,tyPos,textureKey,height,offSetX,offSetY)
   -- adds object infos to tileData
+  -- textureKey must have been loaded in map.data.object on load
   objId = objId+1
   local object = {
     id = objId,
@@ -258,18 +279,17 @@ end
 function map.getTileByPos(x,y)
   if(x == nil or y== nil) then return {0,0} end
   local mapOffset = {x=map.pos.x,y=map.pos.y}
-	-- get tile dimension
-	local width  = ((map.data.tileWidth)*map.zoom)
-	local height = ((map.data.tileHeight)*map.zoom)
 	-- subtract offset and divide by tile width
-  local mx = (x-mapOffset.x)/width
-	local my = (y-mapOffset.y)/width
+  local mx = (x-mapOffset.x)
+	local my = (y-mapOffset.y)
+
   -- cartesian to iso pos
-	local ix = -(mx/2) + my
-	local iy =  (mx/2) + my
+	local ix = (-(mx/2) + my) / (tWidth) - 0.4
+	local iy =  ((mx/2) + my) / (tHeight) - 0.25
+
 	-- round result to get array indexes
-	ix = floor(ix)+1
-	iy = floor(iy)+1
+	ix = math.floor(ix+0.5) + 1
+	iy = math.floor(iy+0.5) + 1
 
   -- !!!!!!! TODO: iy +1 .. solve this in draw function with offset somehow...
 	return {x=iy,y=ix} -- i, j
@@ -353,13 +373,6 @@ function spairs(t, order)
     end
 		--https://stackoverflow.com/questions/15706270/sort-a-table-in-lua
 		--Function "spairs" by Michal Kottman.
-end
-
-function floor(x)
-	--(><)
-	x = math.floor(x)
-	if(x < 0 ) then x = x+1 end
-	return x
 end
 
 function map.toIso(x, y)

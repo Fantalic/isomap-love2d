@@ -2,6 +2,9 @@
   "poorFighter" : {
   "file":"poorFighter.png"
   },
+  "cube":{
+    "file":"poorFighter.png"
+  }
   "tree":{
     "file":"tree.png",
     "collider":"treeCollider.png",

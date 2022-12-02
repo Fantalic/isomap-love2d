@@ -79,9 +79,10 @@ function love.mousereleased(x, y, button, isTouch)
 	clickPosX = x
 	clickPosY = y
 	clickedTile = isomap.getTileByPos(x,y)
-  isomap.insertNewObject(clickedTile.x,clickedTile.y,"tree",0)
+  --isomap.insertNewObject(clickedTile.x,clickedTile.y,"tree",0)
+	isomap.insertNewObject(clickedTile.x,clickedTile.y,"grass",0)
 end
 
 function love.wheelmoved(x, y)
-  isomap.wheelmoved(x,y)
+  isomap:wheelmoved(x,y)
 end
