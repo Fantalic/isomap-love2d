@@ -177,21 +177,27 @@ function map:drawTiles()
         --print((obj.height/map.data.tileHeight))
         table.insert(blockedTiles,{i=i,j=j})
         local tilePos = getPos(i,j)
-        local objHeight = tilePos[2]  - obj.height*tHeight
 
+
+        -- 64*128 textures are basic. all bigger textures must have an offset
+        -- in height and width
         local texture = map.data.textures[obj.textureKey]
-        local objTileHeight = (obj.height/map.data.tileHeight)* tHeight
-        local objTileWidth = (obj.width/map.data.tileWidth)* tWidth
+        local objTileHeight = ((obj.height-map.data.tileHeight) /map.data.tileHeight) * tHeight
+        local objTileWidth = (((obj.width)/(map.data.tileWidth*2))-1) * tWidth
 
-
+        if(obj.textureKey == "grass") then
+          print(objTileWidth)
+        end
 
         local myColor = {0, 1, 0, 1}
       	love.graphics.setColor(myColor)
 
         love.graphics.draw(
           texture,
-          tilePos[1] + tWidth -objTileWidth , --- obj.offSetY*map.zoom,
-          tilePos[2] + tHeight/2 - objTileHeight/2,
+          tilePos[1] - objTileWidth,
+          tilePos[2] - objTileHeight  ,
+          -- tilePos[1]   + tWidth - objTileWidth , --- obj.offSetY*map.zoom,
+          -- tilePos[2]   + tHeight/2 - tHeight/2,
           0,
           map.zoom, map.zoom,
           tWidth,tHeight
@@ -288,7 +294,7 @@ function map.getTileByPos(x,y)
 	local iy =  ((mx/2) + my) / (tHeight) - 0.25
 
 	-- round result to get array indexes
-	ix = math.floor(ix+0.5) + 1
+	ix = math.floor(ix+0.5) + 2
 	iy = math.floor(iy+0.5) + 1
 
   -- !!!!!!! TODO: iy +1 .. solve this in draw function with offset somehow...

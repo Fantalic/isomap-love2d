@@ -11,7 +11,7 @@
     "flip":3.65
   },
   "grass": {
-    "file": "openfield.png",
+    "file": "grass.png",
     "type": "grass"
   },
   "road": {
