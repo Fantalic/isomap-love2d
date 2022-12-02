@@ -1,59 +1,14 @@
-local _C = require("constants")
-local action = require "core/action"
+--TODO: try typing with tl https://github.com/teal-language/tl
 
-winWidth, winHeight = love.graphics.getDimensions()
-local   speedFaktor = 150
-local   speedFaktorUD = 75
-local quard = 16
-local player = {
-  posX = 0,
-  posY = 0,
-  width=quard*3,
-  height=quard*6,
-  actions = {
-    walking = nil,
-    grabbing=nil
-  },
-  anims={{},{},{}}, -- more level; first idle,walking,.. second grabbing.. holding items, third effects.. like sick.. or motivated
-  animSpeed=0.1,
-  orientation={true,true,true,true},
-  movementSpeed = 0,
-  isMoving = false,
-  speed=1,
-  runActionAnim = false
-}
+function move(objMoving,dt,keyDown,keyUp,keyRight,keyLeft)
+  -- objMoving: TObject (basic map scene object) ()
 
-function player:load()
-  local a = action:new("walking",player.animSpeed,quard*3,quard*6)
-  -- a:addAnims({3,5,3,3,3,3,3,5})
-  a:addAnim('1-3',1)
-  a:addAnim('1-5',2)
-  a:addAnim('1-3',3)
-  a:addAnim('1-3',4)
-  a:addAnim('1-3',5)
-  a:addAnim('1-3',6)
-  a:addAnim('1-3',7)
-  a:addAnim('1-5',8)
-
-  player.actions.walking = a
-  player.currentAction = a
-
-  a = action:new("grabbing",player.animSpeed,quard*4,quard*6)
-  a:addAnim('1-8',1,'pauseAtEnd')
-  a:addAnim('1-8',2,'pauseAtEnd')
-
-  player.actions.grabbing = a
-
-  return player
-end
-
-function player:update(dt,map)
   moveSpeed = self.speed * speedFaktor
   updownSpeed = self.speed * speedFaktorUD
 
   local invert = -1
 
-  self.isMoving = false
+  objMoving.isMoving = false
 
  -- first animation level :
  local x = self.posX or 0
@@ -121,24 +76,3 @@ function player:update(dt,map)
   -- local id = spriteBatch:add(animation:getFrameInfo(x,y,r,sx,sy,ox,oy,kx,ky))
   -- spriteBatch:set(id, animation:getFrameInfo(x,y,r,sx,sy,ox,oy,kx,ky))
 end
-
-function player:draw(x,y,zoom) --zoom
-  local correctFaktor = 1
-  -- _C.pixelSize
-  if(x == nil)then
-    x = love.graphics.getWidth( )/2
-  end
-  if(y== nil )then
-     y = love.graphics.getHeight( )/2
-  end
-  posY = y -- - (self.width*correctFaktor*zoom)/2
-  posX = x --  - (self.height*correctFaktor*zoom)/2
-
-  self.currentAction:draw(posX,posY,zoom*1.5,zoom*1.5)
-end
-
-function grab()
-
-end
-
-return player

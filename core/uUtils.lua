@@ -58,4 +58,15 @@ function uUtils.inspect(anything,deepth)
   return result
 end
 
+array = {}
+function array.contains (tab, val)
+    for index, value in ipairs(tab) do
+        if value == val then
+            return true
+        end
+    end
+
+    return false
+end
+
 return uUtils

@@ -28,6 +28,7 @@ SOFTWARE.]]--
 
 local json = require("lib/dkjson")
 local utils = require "core/uUtils"
+local camera = require "core/scene/camera"
 
 local mouse = {}
 -- TODO: mouse class
@@ -43,6 +44,7 @@ local map = {
 	offset= {x=0,y=0},
   pos = {x=0,y=0},
   objects={},
+  npcs = {},
   objectDict = {},
   player = nil
 }
@@ -54,8 +56,7 @@ local blockedTiles  = {}
 function map:load(mapname)
 	local path = "maps/"..mapname
 	map.data = require (path)
-	print("loaded map ")
-	print(map.data.name)
+	print("loaded map '".. map.data.name .. "' \n")
 	map.data.load()
   for colunas in ipairs(map.data.ground) do
 		map.tileData[colunas] = {}
@@ -81,6 +82,7 @@ function map:load(mapname)
 end
 
 function map:update(dt)
+  camera:update(dt)
   if(self.player ~= nil) then
     self.player:update(dt)
   end
@@ -173,10 +175,6 @@ function map:drawTiles()
     local ground = map.tileData[i][j][1]
     local texture = map.data.textures[ground.textureKey]
     assert(texture, "ERROR(isomap.drawTiles-drawGround): texture ".. ground.textureKey .. "  is nil !")
-
-    -- TODO: GET CORRECT CLICK POSTION !!!! ( getTilePos)
-    -- correction offest to fit click to isoPos function (getTileByPos)
-    --local cX,cY = map.toIso(tWidth/2,tHeight/2)
 
     love.graphics.draw(
       texture,
@@ -290,6 +288,10 @@ function map.insertNewObject(txPos,tyPos,textureKey,height,offSetX,offSetY)
     collider = map.data.objects[textureKey].collider,
     --flip = map.data.objects[textureKey].flip
   }
+
+  function object:draw()
+  end
+
   map.objectDict[objId] = object
   if(map.tileData[tyPos] == nil) then map.tileData[tyPos] ={} end
   if(map.tileData[tyPos][txPos] == nil) then map.tileData[tyPos][txPos] ={} end

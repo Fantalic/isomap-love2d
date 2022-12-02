@@ -4,15 +4,20 @@
 -- fork by Fantalic
 -- email: shengluChan@protonmail.com
 
---debugging under : http://127.0.0.1:8000
+-- [dev]
+--debugging with lovebird (?) under : http://127.0.0.1:8000
+
+-- loads a default scene TODO: split file to scene and main
+
 
 local lovebird = require("lib/lovebird")
 
 local grid = require ("core/isogrid")
-local isomap = require ("core/isomap")
+local isomap = require ("core/map/isomap")
 local utils = require ("core/uUtils")
 local world = require "maps/world"
-local player = require ("assets/characters/player/player")
+local player = require ("core/player/player")
+local keyboard = require ("core/keyboard")
 
 local rigitbody = require "core/rigitbody"
 
@@ -43,6 +48,10 @@ function love.load()
 
   --axeSheet = love.graphics.newImage("assets/items/axeSheet.png")
 	isomap.insertNewObject(2,2,"axe")
+	isomap:insertPlayer(player)
+
+	--keyboard.addControl(bindings,onAction)
+
 	--grid.load()
 end
 
@@ -50,7 +59,10 @@ function love.update(dt)
 	-- debuging under : http://127.0.0.1:8000
 	--lovebird.update()
 
-	isomap:update(dt)
+	--isomap:update(dt)
+  keyboard:update(dt)
+	player:update(dt)
+
 	--rigitbody:update(dt)
 end
 
@@ -59,9 +71,9 @@ function love.draw()
 	--grid.draw()
 	isomap:draw()
 	--rigitbody:draw()
+	-- love.graphics.rectangle("fill", clickPosX,clickPosY, pixelSize,pixelSize)
 
-	love.graphics.rectangle("fill", clickPosX,clickPosY, pixelSize,pixelSize)
-
+  -- [debug infos]
 	info = love.graphics.getStats()
 	love.graphics.print("FPS: "..love.timer.getFPS())
 	love.graphics.print("Draw calls: "..info.drawcalls, 0, 12)
@@ -69,6 +81,7 @@ function love.draw()
 
 	love.graphics.print("X: "..math.floor(x).." Y: "..math.floor(y), 0, 48)
 	love.graphics.print("clickd tile x: ".. clickedTile.x .. " y: ".. clickedTile.y, 0, 60)
+
 
 end
 
@@ -79,9 +92,17 @@ function love.mousereleased(x, y, button, isTouch)
 	clickedTile = isomap.getTileByPos(x,y)
   --isomap.insertNewObject(clickedTile.x,clickedTile.y,"tree",0)
 	isomap.insertNewObject(clickedTile.x,clickedTile.y,"tree",0)
-	isomap:insertPlayer(player)
+
 end
 
 function love.wheelmoved(x, y)
   isomap:wheelmoved(x,y)
+end
+
+function love.keypressed(key, scancode, isrepeat)
+	keyboard:keypressed(key)
+end
+
+function love.keyreleased(key)
+	keyboard:keyreleased(key)
 end
