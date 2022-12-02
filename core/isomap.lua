@@ -45,14 +45,13 @@ local map = {
   objects={},
   objectDict = {},
   player = nil
-
 }
 
 local tWidth = 0
 local tHeight = 0
 local blockedTiles  = {}
 
-function map.load(mapname)
+function map:load(mapname)
 	local path = "maps/"..mapname
 	map.data = require (path)
 	print("loaded map ")
@@ -75,9 +74,16 @@ function map.load(mapname)
 	end
   tWidth = (map.data.tileWidth)*map.zoom
   tHeight = (map.data.tileHeight)*map.zoom
+
+  if(self.player ~= nil) then
+    player:load()
+  end
 end
 
 function map:update(dt)
+  if(self.player ~= nil) then
+    self.player:update(dt)
+  end
 end
 
 function map:wheelmoved(x, y)
@@ -93,12 +99,33 @@ function map:wheelmoved(x, y)
 end
 
 function map:draw(player)
-  map.pos.x = player.posX
-  map.pos.y = player.posY
-  player.speed = self.zoom * self.zoom * 2
-  map.player = player
+  -- focused
+
+
+--TODO: check tile position while moving
+
+ -- [ get player tile postion]
+  -- local tWidth = (map.data.tileWidth)*map.zoom
+  -- local tHeight = (map.data.tileHeight)*map.zoom
+  -- posY = love.graphics.getHeight( )/2 + (self.height+tHeight)*map.zoom
+  -- posX = love.graphics.getWidth( )/2  + (self.width+tWidth)*map.zoom
+  -- local pos = map.getTileByPos(posX,posY)
+  --
+  -- self.tPosI = pos.y
+  -- self.tPosJ = pos.x-2
+
+
+  -- map.pos.x = player.posX
+  -- map.pos.y = player.posY
+
+
 
   self:drawTiles()
+  if(self.player ~= nil) then
+
+    self.player.speed = self.zoom * self.zoom * 2
+    self.player:draw(self.player.posX,self.player.posY,self.zoom)
+  end
 
 end
 
@@ -185,10 +212,6 @@ function map:drawTiles()
         local objTileHeight = ((obj.height-map.data.tileHeight) /map.data.tileHeight) * tHeight
         local objTileWidth = (((obj.width)/(map.data.tileWidth*2))-1) * tWidth
 
-        if(obj.textureKey == "grass") then
-          print(objTileWidth)
-        end
-
         local myColor = {0, 1, 0, 1}
       	love.graphics.setColor(myColor)
 
@@ -204,9 +227,6 @@ function map:drawTiles()
         )
         love.graphics.setColor({1,1,1,1})
       end
-     end
-     if(map.player.tPosI == i and map.player.tPosJ == j) then
-       map.player:draw(self.zoom)
      end
   end
 
@@ -234,19 +254,24 @@ end
 local objId = 0
 
 function map.drawRect(txPos,tyPos)
-  objId = objId+1
-  local object = {
-    id = objId,
-    txPos=txPos, -- x =j
-    tyPos=tyPos, -- y = i
-    textureKey=textureKey,
-    offSetX=offSetX or 0 ,
-    offSetY=offSetY or 0 ,
-    height=map.data.objects[textureKey].height,
-    width= map.data.objects[textureKey].width,
-    collider = map.data.objects[textureKey].collider,
-    --flip = map.data.objects[textureKey].flip
-  }
+  -- objId = objId+1
+  -- local object = {
+  --   id = objId,
+  --   txPos=txPos, -- x =j
+  --   tyPos=tyPos, -- y = i
+  --   textureKey=textureKey,
+  --   offSetX=offSetX or 0 ,
+  --   offSetY=offSetY or 0 ,
+  --   height=map.data.objects[textureKey].height,
+  --   width= map.data.objects[textureKey].width,
+  --   collider = map.data.objects[textureKey].collider,
+  --   --flip = map.data.objects[textureKey].flip
+  -- }
+end
+
+function map:insertPlayer(player)
+  self.player = player
+  self.player:load()
 end
 
 function map.insertNewObject(txPos,tyPos,textureKey,height,offSetX,offSetY)

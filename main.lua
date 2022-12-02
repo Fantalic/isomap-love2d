@@ -37,8 +37,7 @@ function love.load()
 	 --world.load(os.time())
 
   -- load map
-	isomap.load("test/testmap")
-	player:load()
+	isomap:load("test/testmap")
 
 	rigitbody.load()
 
@@ -51,7 +50,6 @@ function love.update(dt)
 	-- debuging under : http://127.0.0.1:8000
 	--lovebird.update()
 
-	player:update(dt,isomap)
 	isomap:update(dt)
 	--rigitbody:update(dt)
 end
@@ -59,7 +57,7 @@ end
 
 function love.draw()
 	--grid.draw()
-	isomap:draw(player)
+	isomap:draw()
 	--rigitbody:draw()
 
 	love.graphics.rectangle("fill", clickPosX,clickPosY, pixelSize,pixelSize)
@@ -81,6 +79,7 @@ function love.mousereleased(x, y, button, isTouch)
 	clickedTile = isomap.getTileByPos(x,y)
   --isomap.insertNewObject(clickedTile.x,clickedTile.y,"tree",0)
 	isomap.insertNewObject(clickedTile.x,clickedTile.y,"tree",0)
+	isomap:insertPlayer(player)
 end
 
 function love.wheelmoved(x, y)

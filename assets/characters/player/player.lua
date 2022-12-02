@@ -50,6 +50,9 @@ end
 function player:update(dt,map)
   moveSpeed = self.speed * speedFaktor
   updownSpeed = self.speed * speedFaktorUD
+
+  local invert = -1
+
   self.isMoving = false
 
  -- first animation level :
@@ -58,13 +61,13 @@ function player:update(dt,map)
   if love.keyboard.isDown("down") then
     self.isMoving = true
     self.currentAction = self.actions.walking
-     y = y-updownSpeed*dt
+     y = y-updownSpeed*dt*invert
     if     love.keyboard.isDown("left") then
       self.currentAction:setActivLayers({2})
-      x = x + moveSpeed*dt
+      x = x + moveSpeed*dt*invert
     elseif love.keyboard.isDown("right") then
       self.currentAction:setActivLayers({8})
-      x = x - moveSpeed*dt
+      x = x - moveSpeed*dt*invert
     else
       self.currentAction:setActivLayers({1})
     end
@@ -73,13 +76,13 @@ function player:update(dt,map)
     self.isMoving = true
     self.currentAction = self.actions.walking
 
-    y = y+updownSpeed*dt
+    y = y+updownSpeed*dt*invert
     if     love.keyboard.isDown("left") then
       self.currentAction:setActivLayers({4})
-      x = x + moveSpeed*dt
+      x = x + moveSpeed*dt*invert
     elseif love.keyboard.isDown("right") then
       self.currentAction:setActivLayers({6})
-      x = x - moveSpeed*dt
+      x = x - moveSpeed*dt*invert
     else
       self.currentAction:setActivLayers({5})
     end
@@ -88,30 +91,19 @@ function player:update(dt,map)
     self.isMoving = true
     self.currentAction = self.actions.walking
     self.currentAction:setActivLayers({3})
-    x = x+ moveSpeed*dt
+    x = x+ moveSpeed*dt*invert
 
   elseif love.keyboard.isDown("right") then
     self.isMoving = true
     self.currentAction = self.actions.walking
     self.currentAction:setActivLayers({7})
-    x = x - moveSpeed*dt
+    x = x - moveSpeed*dt*invert
   end
 
-
-  local tWidth = (map.data.tileWidth)*map.zoom
-  local tHeight = (map.data.tileHeight)*map.zoom
-  posY = love.graphics.getHeight( )/2 + (self.height+tHeight)*map.zoom
-  posX = love.graphics.getWidth( )/2  + (self.width+tWidth)*map.zoom
-  local pos = map.getTileByPos(posX,posY)
-
-  self.tPosI = pos.y
-  self.tPosJ = pos.x-2
-  if(x~=nil and y~=nil and self.isMoving and map:isTileAccesable(self.tPosJ,self.tPosI))then
+  if(x~=nil and y~=nil and self.isMoving )then
     self.posX = x
     self.posY = y
   end
-
-
 
   if not self.isMoving and love.keyboard.isDown("e") then
     self.currentAction = self.actions.grabbing
@@ -130,11 +122,17 @@ function player:update(dt,map)
   -- spriteBatch:set(id, animation:getFrameInfo(x,y,r,sx,sy,ox,oy,kx,ky))
 end
 
-function player:draw(zoom)
+function player:draw(x,y,zoom) --zoom
   local correctFaktor = 1
   -- _C.pixelSize
-  posY = love.graphics.getHeight( )/2 - (self.width*correctFaktor*zoom)/2
-  posX = love.graphics.getWidth( )/2  - (self.height*correctFaktor*zoom)/2
+  if(x == nil)then
+    x = love.graphics.getWidth( )/2
+  end
+  if(y== nil )then
+     y = love.graphics.getHeight( )/2
+  end
+  posY = y -- - (self.width*correctFaktor*zoom)/2
+  posX = x --  - (self.height*correctFaktor*zoom)/2
 
   self.currentAction:draw(posX,posY,zoom*1.5,zoom*1.5)
 end
