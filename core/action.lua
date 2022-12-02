@@ -16,8 +16,6 @@ function action:new(name,speed,gw,gh)
    a.anims= {}
    a.activLayers={}
 
-   print("inspect..")
-   utils.inspect(a)
    return a
 end
 
@@ -29,6 +27,7 @@ end
 function action:addAnim(begintoend,row, option)
   local anim = anim8.newAnimation(self.grid(begintoend,row), self.speed,option)
   table.insert(self.anims, anim)
+  return anim
 end
 
 function action:setActivLayers(layers) -- layers;Array of number

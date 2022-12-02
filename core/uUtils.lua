@@ -58,8 +58,9 @@ function uUtils.inspect(anything,deepth)
   return result
 end
 
-array = {}
-function array.contains (tab, val)
+
+-- adding functions to global table object
+function table.containsValue (tab, val)
     for index, value in ipairs(tab) do
         if value == val then
             return true
@@ -68,5 +69,14 @@ function array.contains (tab, val)
 
     return false
 end
+
+function table.values(tbl)
+  local values = {}
+  for k, v in pairs(tbl) do
+    table.insert(values,v)
+  end
+  return values
+end
+
 
 return uUtils

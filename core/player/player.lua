@@ -39,65 +39,64 @@ function player:load()
   player.currentAction = a
 
   a = action:new("grabbing",player.animSpeed,quard*4,quard*6)
-  a:addAnim('1-8',1,'pauseAtEnd')
-  a:addAnim('1-8',2,'pauseAtEnd')
+  local bodyAnim = a:addAnim('1-8',1,'pauseAtEnd')
+  local armAmin = a:addAnim('1-8',2,'pauseAtEnd')
+
+  -- added a callback to anim8.lua in Animation:pause()
+  function onPause(anim)
+    anim:resume()
+    anim.status = "playing"
+    anim:gotoFrame(1)
+    self.isMoving = false
+  end
+  bodyAnim.onPause = onPause
+  armAmin.onPause = onPause
 
   player.actions.grabbing = a
 
   return player
 end
 
-function player:update(dt,map)
+function player:move(dt,dir)
   moveSpeed = self.speed * speedFaktor
   updownSpeed = self.speed * speedFaktorUD
 
-  local invert = -1
+  -- rename to playerisActiv or something
+  self.isMoving = true
+  self.currentAction = self.actions.walking
 
-  self.isMoving = false
+  -- first animation level :
+  local x = self.posX or 0
+  local y = self.posY or 0
 
- -- first animation level :
- local x = self.posX or 0
- local y = self.posY or 0
-  if love.keyboard.isDown("down") then
-    self.isMoving = true
-    self.currentAction = self.actions.walking
-     y = y-updownSpeed*dt*invert
-    if     love.keyboard.isDown("left") then
-      self.currentAction:setActivLayers({2})
-      x = x + moveSpeed*dt*invert
-    elseif love.keyboard.isDown("right") then
-      self.currentAction:setActivLayers({8})
-      x = x - moveSpeed*dt*invert
-    else
-      self.currentAction:setActivLayers({1})
-    end
-
-  elseif love.keyboard.isDown("up") then
-    self.isMoving = true
-    self.currentAction = self.actions.walking
-
-    y = y + updownSpeed * dt * invert
-    if     love.keyboard.isDown("left") then
-      self.currentAction:setActivLayers({4})
-      x = x + moveSpeed*dt*invert
-    elseif love.keyboard.isDown("right") then
-      self.currentAction:setActivLayers({6})
-      x = x - moveSpeed*dt*invert
-    else
-      self.currentAction:setActivLayers({5})
-    end
-
-  elseif love.keyboard.isDown("left") then
-    self.isMoving = true
-    self.currentAction = self.actions.walking
+  if dir == "N" then
+     y = y - updownSpeed*dt
+     self.currentAction:setActivLayers({5})
+  elseif (dir =="S") then
+    y = y + updownSpeed*dt
+    self.currentAction:setActivLayers({1})
+  elseif ( dir == "W") then
     self.currentAction:setActivLayers({3})
-    x = x+ moveSpeed*dt*invert
-
-  elseif love.keyboard.isDown("right") then
-    self.isMoving = true
-    self.currentAction = self.actions.walking
+    x = x - moveSpeed*dt
+  elseif (dir == "O") then
     self.currentAction:setActivLayers({7})
-    x = x - moveSpeed*dt*invert
+    x = x + moveSpeed*dt
+  elseif (dir == "NW") then
+    y = y - updownSpeed*dt
+    x = x - moveSpeed*dt
+    self.currentAction:setActivLayers({4})
+  elseif (dir == "NO") then
+    y = y - updownSpeed*dt
+    x = x + moveSpeed*dt
+    self.currentAction:setActivLayers({6})
+  elseif (dir == "SW") then
+    y = y + updownSpeed * dt
+    x = x - moveSpeed*dt
+    self.currentAction:setActivLayers({2})
+  elseif (dir == "SO") then
+    y = y + updownSpeed * dt
+    x = x + moveSpeed*dt
+    self.currentAction:setActivLayers({8})
   end
 
   if(x~=nil and y~=nil and self.isMoving )then
@@ -105,6 +104,9 @@ function player:update(dt,map)
     self.posY = y
   end
 
+end
+
+function player:update(dt,map)
   if not self.isMoving and love.keyboard.isDown("e") then
     self.currentAction = self.actions.grabbing
     --local b = a:clone():flipV()

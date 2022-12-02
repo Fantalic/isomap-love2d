@@ -17,14 +17,10 @@ local bindings = {
     moveCameraLeft = "keyLeft"
 }
 
--- private variables
-local update = false
-local pressedKey = nil
-local keysPressedCount = 0
-
 -- keyboard object
 local keyboard = {
-  onKeyInput = {}
+  bindings = {},  -- holds a control object (TControl) behind the keyboard key as table key
+  activeControls = {} -- holds controls currently active
 }
 
 function keyboard:load()
@@ -32,26 +28,41 @@ end
 
 function keyboard:keypressed(key)
   update = true
-  keysPressedCount = keysPressedCount + 1
 
-  playerIsMoving = array.contains({"w","a","s","d"},key)
-  cameraMoving = array.contains({})
+
+  -- holds control object (TControl)
+  local control = self.bindings[key]
+  if (control ~= nil ) then
+    if(control.frozen == false) then
+      if(control.active == false) then
+        self.activeControls[control.name] = control
+      end
+      control.active = true;
+      control.keysPressedCount = control.keysPressedCount + 1
+    end
+  end
+
+
+
+  --playerIsMoving = table.containsValue({"w","a","s","d"},key)
+
 end
 
 function keyboard:keyreleased(key)
-  keysPressedCount = keysPressedCount - 1
-  if(keysPressedCount == 0 ) then
-    update = false
-    pressedKey = nil
+  local control = self.bindings[key]
+  if control == nil then return end
+
+  control.keysPressedCount = control.keysPressedCount - 1
+  if(control.keysPressedCount == 0 ) then
+    control.stop()
+    self.activeControls[control.name] = nil
   end
 end
 
-local function checkPlayerMovment(dt)
-end
 
 function keyboard:update(dt)
-  if (update == true) then
-    --onKeyInput(dt)
+  for k, control in pairs(self.activeControls) do
+    control:callback(dt)
   end
 end
 
@@ -59,46 +70,74 @@ local function onKeyInput(dt)
 
 end
 
-local function  utilMoveMentInput(keyUp,keyDown,keyRight,keyLeft)
-  local invert = -1
 
+function keyboard:addMovmentControl(name,bindings,callback,stopCb)
+  local keys = table.values(bindings)
+  local control = {
+    name = name,
+    bindings = bindings,
+    keys = table.values(bindings),
+    keysPressedCount = 0,
+    frozen = false,
+    active = false,
+  }
+  function control:callback(dt)
+    local dir = keyboard.getMovmentDirection(
+      self.bindings.up,
+      self.bindings.down,
+      self.bindings.right,
+      self.bindings.left
+    )
+    print(dir)
+    callback(dt,dir)
+  end
+  function control:stop()
+    control.active = false;
+    stopCb()
+  end
+  function control:remove()
+    for k, v in pairs(bindings) do
+      self.bindings[v] = nil
+    end
+  end
+
+  for k, v in pairs(bindings) do
+    self.bindings[v] = control
+  end
+
+  return control
+end
+
+function keyboard.getMovmentDirection(keyUp,keyDown,keyRight,keyLeft)
+
+print(keyLeft)
+print(keyUp.. " ".. keyDown.. " ".. keyRight .." ")
  -- first animation level :
- local x = 0
- local y = 0
  local direction = "" -- type: ["N","S","W","O","NW","NO","SW","SO"]
 
-  if love.keyboard.isDown("down") then
-     y = y-updownSpeed*dt*invert
+  if love.keyboard.isDown(keyDown) then
      direction = "S"
-    if love.keyboard.isDown("left") then
-      x = x + moveSpeed*dt*invert
+    if love.keyboard.isDown(keyLeft) then
       direction = direction .. "W"
-    elseif love.keyboard.isDown("right") then
-      x = x - moveSpeed*dt*invert
+    elseif love.keyboard.isDown(keyRight) then
       direction = direction .. "O"
     end
 
-  elseif love.keyboard.isDown("up") then
-    y = y+updownSpeed*dt*invert
+  elseif love.keyboard.isDown(keyUp) then
     direction = "N"
-    if love.keyboard.isDown("left") then
-      x = x + moveSpeed*dt*invert
+    if love.keyboard.isDown(keyLeft) then
       direction = direction .."W"
-    elseif love.keyboard.isDown("right") then
-      x = x - moveSpeed*dt*invert
+    elseif love.keyboard.isDown(keyRight) then
       direction = direction.. "O"
+    end
 
-  elseif love.keyboard.isDown("left") then
-    x = x+ moveSpeed*dt*invert
+  elseif love.keyboard.isDown(keyLeft) then
     direction = "W"
-  end
-
-  elseif love.keyboard.isDown("right") then
-    x = x - moveSpeed*dt*invert
+  elseif love.keyboard.isDown(keyRight) then
     direction = "O"
   end
 
-  return {x,y,dir=direction}
+  return direction
 end
 
 return keyboard

@@ -33,6 +33,8 @@ local x = 0
 local y = 0
 
 local axeSheet = nil
+
+
 function love.load()
 	--Set background to deep blue
 	love.graphics.setBackgroundColor(0, 0, 69)
@@ -50,7 +52,23 @@ function love.load()
 	isomap.insertNewObject(2,2,"axe")
 	isomap:insertPlayer(player)
 
-	--keyboard.addControl(bindings,onAction)
+	local movementBindings = {
+		up = "w",
+		down = "s",
+		left = "a",
+		right = "d"
+	}
+	keyboard:addMovmentControl(
+	  "playerMovement",
+	  movementBindings,
+		function (dt,dir)
+			player:move(dt,dir)
+		end,
+		function()
+			print("STOP!")
+			player.isMoving = false
+		end
+	)
 
 	--grid.load()
 end
