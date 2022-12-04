@@ -18,6 +18,7 @@ local utils = require ("core/uUtils")
 local world = require "maps/world"
 local player = require ("core/player/player")
 local keyboard = require ("core/keyboard")
+local camera = require("core/scene/camera")
 
 local rigitbody = require "core/rigitbody"
 
@@ -43,34 +44,59 @@ function love.load()
 	-- load random world (minimap)
 	 --world.load(os.time())
 
-  -- load map
+	-- load map
 	isomap:load("test/testmap")
-
-	rigitbody.load()
-
-  --axeSheet = love.graphics.newImage("assets/items/axeSheet.png")
-	isomap.insertNewObject(2,2,"axe")
+	isomap:insertNewObject(2,2,"axe")
 	isomap:insertPlayer(player)
 
+	-- [dev] testing a rigitbody
+	--rigitbody.load()
+
+  -- create Player movement control object
 	local movementBindings = {
 		up = "w",
 		down = "s",
 		left = "a",
 		right = "d"
 	}
+
 	keyboard:addMovmentControl(
 	  "playerMovement",
 	  movementBindings,
+		--onInput:
 		function (dt,dir)
 			player:move(dt,dir)
 		end,
+		-- onPause:
 		function()
-			print("STOP!")
 			player.isMoving = false
 		end
 	)
 
-	--grid.load()
+	-- create camera control
+	local cameraMoveBindings = {
+		up = "up",
+		down = "down",
+		left = "left",
+		right = "right"
+	}
+
+	keyboard:addMovmentControl(
+		"cameraMovement",
+		cameraMoveBindings,
+		--onInput:
+		function (dt,dir)
+			print(dir)
+			local dx, dy = camera:move(dt,dir)
+			-- move map
+			isomap:onCameraMove(dx,dy)
+		end
+		-- onPause:
+	)
+
+
+
+
 end
 
 function love.update(dt)
@@ -87,7 +113,7 @@ end
 
 function love.draw()
 	--grid.draw()
-	isomap:draw()
+	isomap:draw(camera.zoom)
 	--rigitbody:draw()
 	-- love.graphics.rectangle("fill", clickPosX,clickPosY, pixelSize,pixelSize)
 
@@ -109,7 +135,7 @@ function love.mousereleased(x, y, button, isTouch)
 	clickPosY = y
 	clickedTile = isomap.getTileByPos(x,y)
   --isomap.insertNewObject(clickedTile.x,clickedTile.y,"tree",0)
-	isomap.insertNewObject(clickedTile.x,clickedTile.y,"tree",0)
+	isomap:insertNewObject(clickedTile.x,clickedTile.y,"tree",0)
 
 end
 

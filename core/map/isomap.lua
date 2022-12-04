@@ -28,19 +28,16 @@ SOFTWARE.]]--
 
 local json = require("lib/dkjson")
 local utils = require "core/uUtils"
-local camera = require "core/scene/camera"
-
-local mouse = {}
--- TODO: mouse class
+local cObject = require("core/map/cObject")
+local mapData = require("core/map/mapData")
 
 local winWidth, winHeight = love.graphics.getDimensions()
 
 local map = {
-  data = {},
+	--public vars
 	textures = {},
-	tileData = {},
+	data = nil,
 	lighting = {},
-	zoom = 1,
 	offset= {x=0,y=0},
   pos = {x=0,y=0},
   objects={},
@@ -48,140 +45,46 @@ local map = {
   objectDict = {},
   player = nil
 }
-
-local tWidth = 0
+-- private vars
+local tWidth = 0  -- tile Width changes by zoom
 local tHeight = 0
-local blockedTiles  = {}
+local windowTileSizeX = 12 -- defines number of drawn tiles
+local windowTileSizeY = 12
+local zoomFactor = 1
 
 function map:load(mapname)
 	local path = "maps/"..mapname
-	map.data = require (path)
+  self.data = require (path)
+  self.data:load()
 	print("loaded map '".. map.data.name .. "' \n")
-	map.data.load()
-  for colunas in ipairs(map.data.ground) do
-		map.tileData[colunas] = {}
-		for linhas in ipairs(map.data.ground[colunas]) do
-				local xPos = linhas
-				local yPos = colunas
-				local tKey = map.data.ground[colunas][linhas]
-				map.tileData[colunas][linhas] = { {
-          textureKey = tKey,
-          x=xPos, y=yPos,
-          offSetX = 0,
-          offSetY = 0,
-          height  = 0
-        } }
-		end
-	end
-  tWidth = (map.data.tileWidth)*map.zoom
-  tHeight = (map.data.tileHeight)*map.zoom
 
-  if(self.player ~= nil) then
-    player:load()
-  end
+	tWidth = (self.data.tileWidth) * zoomFactor
+	tHeight = (self.data.tileHeight) * zoomFactor
+
 end
 
 function map:update(dt)
-  camera:update(dt)
+
   if(self.player ~= nil) then
     self.player:update(dt)
   end
-end
-
-function map:wheelmoved(x, y)
-    if y > 0 then
-      self.zoom = self.zoom + 0.1
-    elseif y < 0 then
-      self.zoom = self.zoom - 0.1
-    end
-
-	if self.zoom < 0.1 then self.zoom = 0.1 end
-  tWidth = (map.data.tileWidth)*self.zoom
-  tHeight = (map.data.tileHeight)*self.zoom
-end
-
-function map:draw(player)
-  -- focused
-
-
---TODO: check tile position while moving
-
- -- [ get player tile postion]
-  -- local tWidth = (map.data.tileWidth)*map.zoom
-  -- local tHeight = (map.data.tileHeight)*map.zoom
-  -- posY = love.graphics.getHeight( )/2 + (self.height+tHeight)*map.zoom
-  -- posX = love.graphics.getWidth( )/2  + (self.width+tWidth)*map.zoom
-  -- local pos = map.getTileByPos(posX,posY)
-  --
-  -- self.tPosI = pos.y
-  -- self.tPosJ = pos.x-2
-
-
-  -- map.pos.x = player.posX
-  -- map.pos.y = player.posY
-
-
-
-  self:drawTiles()
-  if(self.player ~= nil) then
-
-    self.player.speed = self.zoom * self.zoom * 2
-    self.player:draw(self.player.posX,self.player.posY,self.zoom)
-  end
 
 end
 
-function map:drawTiles()
-   --{x= 2*tWidth,y=tHeight}
-  local mOffset = {x=0.25*tWidth, y=0.125*tHeight}
-  local windowTileSizeX = 12 *(1/map.zoom)
-  local windowTileSizeY = 12*(1/map.zoom)
-  local zeroPointX = 256    + tWidth*2
-  local zeroPointY = 0--256* 2 + tHeight*2
-  -- zoom ausgleich
-  --mOffset.x = mOffset.x - (1/map.zoom)*tWidth*4
-  --mOffset.y = mOffset.y - (1/map.zoom)*tHeight*2
-  local zeroTile = map.getTileByPos(zeroPointX, zeroPointY) -- (map.pos.x,map.pos.y)
-  local drawAfterCharakters= {}
-  blockedTiles = {}
-
-
-  function getPos(j,i)
-    -- get screen postions(?) by iso-grid coordinates
-    local yPos = (j) * tWidth - tWidth
-    local xPos = (i) * tHeight
-    local xPos, yPos = map.toIso(xPos, yPos)
-    return {
-      xPos+map.pos.x - mOffset.x,--36*(1/map.zoom)*1.5,
-      yPos+map.pos.y - mOffset.y--16*(1/map.zoom)*1.5
-    }
-  end
-
-  local iterateVisibleTiles = function(funcX,funcY)
-    for i = zeroTile.y, zeroTile.y + ( windowTileSizeY),1 do
-      if map.tileData[i] then
-        if(funcY ~=nil) then funcY(i) end
-        for j = zeroTile.x,zeroTile.x + (windowTileSizeX),1 do
-          if map.tileData[i][j] then
-            funcX(i,j)
-          end
-        end
-      end
-    end
-  end
+function map:draw(zoom)
+  local tiles = map.data.tiles
 
   local drawGround = function (i,j)
-    local tilePos = getPos(i,j)
-    local ground = map.tileData[i][j][1]
-    local texture = map.data.textures[ground.textureKey]
-    assert(texture, "ERROR(isomap.drawTiles-drawGround): texture ".. ground.textureKey .. "  is nil !")
+    local tilePos = self:getPos(i,j)
+    local ground = self.data.tiles[i][j][1]
 
+    assert(ground.texture, "ERROR(isomap.draw-drawGround): texture ".. ground.textureKey .. "  is nil !")
     love.graphics.draw(
-      texture,
+      ground.texture,
       tilePos[1],
-      tilePos[2],--.x+map.pos.y
+      tilePos[2], --.x+map.pos.y
       0,
-      map.zoom, map.zoom,
+      zoomFactor, zoomFactor,
       tWidth, tHeight
     )
     -- if i = 1  its the ground. draw grid
@@ -190,121 +93,157 @@ function map:drawTiles()
       tilePos[1]  + tWidth, -- ,
       tilePos[2]  + tHeight/2,
       0,
-      map.zoom, map.zoom,
+      zoomFactor, zoomFactor,
       tWidth, tHeight
     )
+
   end
 
   local drawObjects = function(i,j)
-    for idx = 2, #map.tileData[i][j], 1 do
-      local obj = map.tileData[i][j][idx]
+    for idx = 2, #self.data.tiles[i][j], 1 do
+      local obj = self.data.tiles[i][j][idx]
       if(obj ~= nil ) then
-        --print((obj.height/map.data.tileHeight))
-        table.insert(blockedTiles,{i=i,j=j})
-        local tilePos = getPos(i,j)
-
-
+        local tilePos = self:getPos(i,j)
         -- 64*128 textures are basic. all bigger textures must have an offset
         -- in height and width
-        local texture = map.data.textures[obj.textureKey]
         local objTileHeight = ((obj.height-map.data.tileHeight) /map.data.tileHeight) * tHeight
         local objTileWidth = (((obj.width)/(map.data.tileWidth*2))-1) * tWidth
 
-        local myColor = {0, 1, 0, 1}
-      	love.graphics.setColor(myColor)
+        local xPos = tilePos[1] - objTileWidth
+        local yPos = tilePos[2] - objTileHeight
 
-        love.graphics.draw(
-          texture,
-          tilePos[1] - objTileWidth,
-          tilePos[2] - objTileHeight  ,
-          -- tilePos[1]   + tWidth - objTileWidth , --- obj.offSetY*map.zoom,
-          -- tilePos[2]   + tHeight/2 - tHeight/2,
-          0,
-          map.zoom, map.zoom,
-          tWidth,tHeight
-        )
-        love.graphics.setColor({1,1,1,1})
+				if(obj.textureKey == "tree" and obj.blockedTiles) then
+					print(obj.textureKey)
+					inspect(obj.blockedTiles)
+				end
+
+				if(obj.draw) then
+					obj:draw(xPos,yPos,zoomFactor)
+				end
       end
      end
   end
 
-  iterateVisibleTiles(drawGround)
-  iterateVisibleTiles(drawObjects)
+  self:iterateVisibleTiles(drawGround)
+  self:iterateVisibleTiles(drawObjects)
 
-  -- for idx = 1, #drawAfterCharakters, 1 do
-  --   local obj = drawAfterCharakters[idx]
-  --   local tilePos = getPos(obj.tyPos,obj.txPos)
-  --   local texture = map.data.textures[obj.textureKey]
-  --
-  --   local objTileHeight = obj.height*tHeight
-  --
-  --   love.graphics.draw(
-  --     texture,
-  --     tilePos[1]-mOffset.x ,
-  --     tilePos[2]-mOffset.y - objTileHeight ,--.x+map.pos.y
-  --     0,
-  --     map.zoom, map.zoom,
-  --     tWidth, tHeight
-  --   )
-  -- end
+	local objTileHeight = ((self.player.height /map.data.tileHeight)) * tHeight
+
+	local xPos = self.player.posX + (self.player.width/2)
+	local yPos = self.player.posY + objTileHeight + tHeight/2
+	love.graphics.setColor({0, 1, 0, 1})
+	love.graphics.rectangle("fill", xPos,yPos, 10,10)
+	love.graphics.setColor({1, 1, 1, 1})
+
 end
 
-local objId = 0
+function map:iterateVisibleTiles(funcX,funcY)
+	-- get tile from fixed zero point screen position
+	local zeroPointX = 256  --  + tWidth*2 --TODO: check this
+	local zeroPointY = 0 --256* 2 + tHeight*2
+	local zeroTile =  map.getTileByPos(zeroPointX, zeroPointY) -- (map.pos.x,map.pos.y)
 
-function map.drawRect(txPos,tyPos)
-  -- objId = objId+1
-  -- local object = {
-  --   id = objId,
-  --   txPos=txPos, -- x =j
-  --   tyPos=tyPos, -- y = i
-  --   textureKey=textureKey,
-  --   offSetX=offSetX or 0 ,
-  --   offSetY=offSetY or 0 ,
-  --   height=map.data.objects[textureKey].height,
-  --   width= map.data.objects[textureKey].width,
-  --   collider = map.data.objects[textureKey].collider,
-  --   --flip = map.data.objects[textureKey].flip
-  -- }
+  for i = zeroTile.y, zeroTile.y + ( windowTileSizeY),1 do
+		if self.data.tiles[i] then
+      if(funcY ~=nil) then funcY(i) end -- TODO: usage ?
+      for j = zeroTile.x,zeroTile.x + (windowTileSizeX),1 do
+        if self.data.tiles[i][j] then
+          funcX(i,j)
+        end
+      end
+    end
+  end
+end
+
+function map:getPos(j,i)
+  local mOffset = {x=0.25*tWidth, y=0.125*tHeight}
+  -- get screen postions(?) by iso-grid coordinates
+  local yPos = (j) * tWidth - tWidth
+  local xPos = (i) * tHeight
+  local xPos, yPos = map.toIso(xPos, yPos)
+  return {
+    xPos+self.pos.x - mOffset.x,--36*(1/map.zoom)*1.5,
+    yPos+self.pos.y - mOffset.y--16*(1/map.zoom)*1.5
+  }
+end
+
+function map:zoom(factor)
+  zoomFactor = factor
+  tWidth = (self.data.tileWidth) * factor
+  tHeight = (self.data.tileHeight) * factor
+	-- TODO: last change before error
+	windowTileSizeX = 12 *(1/factor)
+	windowTileSizeY = 12*(1/factor)
+
+  if self.player then
+		self.player.speed = zoomFactor * zoomFactor * 2
+	end
+
 end
 
 function map:insertPlayer(player)
   self.player = player
   self.player:load()
+	self.player.speed = zoomFactor * zoomFactor * 2
+
+  local spawnPoint = {x=5,y=5}
+
+	-- local object = self.data.createEmptyObject(player.width,player.height)
+  -- function object:draw(x,y,zoom)
+	--
+	-- 	player:draw(x,y,zoom)
+	-- end
+
+	self.data:insertObject(spawnPoint.x,spawnPoint.y,player)
+
+	--self.player:draw(self.player.posX,self.player.posY,zoomFactor)
 end
 
-function map.insertNewObject(txPos,tyPos,textureKey,height,offSetX,offSetY)
+function map:onCameraMove(dx,dy)
+	self.pos.x = self.pos.x + dx
+	self.pos.y = self.pos.y + dy
+
+	if(self.player) then
+		self.player.posX = self.player.posX + dx
+		self.player.posY = self.player.posY + dy
+
+		local objTileHeight = ((self.player.height /map.data.tileHeight)) * tHeight
+		local xPos = self.player.posX + (self.player.width/2)
+		local yPos = self.player.posY + objTileHeight + tHeight/2
+
+		local tPos = self.getTileByPos(xPos,yPos)
+		inspect(tPos)
+	end
+end
+
+function map:insertNewObject(txPos,tyPos,textureKey)
   -- adds object infos to tileData
   -- textureKey must have been loaded in map.data.object on load
-  objId = objId+1
-  local object = {
-    id = objId,
-    txPos=txPos, -- x =j
-    tyPos=tyPos, -- y = i
-    textureKey=textureKey,
-    offSetX=offSetX or 0 ,
-    offSetY=offSetY or 0 ,
-    height=map.data.objects[textureKey].height,
-    width= map.data.objects[textureKey].width,
-    collider = map.data.objects[textureKey].collider,
-    --flip = map.data.objects[textureKey].flip
-  }
 
-  function object:draw()
+  local object = self.data:createObject(txPos,tyPos,textureKey)
+
+  function object:draw(xPos,yPos)
+    local myColor = {0, 1, 0, 1}
+    love.graphics.setColor(myColor)
+
+    love.graphics.draw(
+      object.texture,
+      xPos,
+      yPos,
+      0,
+      zoomFactor, zoomFactor,
+      tWidth,tHeight
+    )
+    love.graphics.setColor({1,1,1,1})
   end
 
-  map.objectDict[objId] = object
-  if(map.tileData[tyPos] == nil) then map.tileData[tyPos] ={} end
-  if(map.tileData[tyPos][txPos] == nil) then map.tileData[tyPos][txPos] ={} end
+  --self.data:insertObject(txPos,tyPos,object)
 
-  if(map.tileData[tyPos] and map.tileData[tyPos][txPos]) then
-    local index = #map.tileData[tyPos][txPos]+1
-    map.tileData[tyPos][txPos][index] = object
-  end
 end
 
 function map.getTileCoordinates2D(i, j)
-	local xP = map.tileData[i][j].x * (map.data.tileWidth*map.zoom)
-	local yP = map.tileData[i][j].y * (map.data.tileWidth*map.zoom)
+	local xP = self.data.tiles[i][j].x * (map.data.tileWidth*zoomFactor)
+	local yP = self.data.tiles[i][j].y * (map.data.tileWidth*zoomFactor)
 	xP, yP = map.toIso(xP, yP)
 	return xP, yP
 end
@@ -324,13 +263,19 @@ function map.getTileByPos(x,y)
 	ix = math.floor(ix+0.5) + 2
 	iy = math.floor(iy+0.5) + 1
 
-  -- !!!!!!! TODO: iy +1 .. solve this in draw function with offset somehow...
+	if(ix <= 0 ) then
+		ix = 1
+		--return nil
+  elseif(iy <= 0) then
+		iy= 1
+		 --return nil
+	  end
 	return {x=iy,y=ix} -- i, j
 end
 
 function map.checkTileCollision(tile,object)
-	local width  = (map.data.tileWidth*map.zoom)
-	local height = (map.data.tileHeight*map.zoom)
+	local width  = (map.data.tileWidth*zoomFactor)
+	local height = (map.data.tileHeight*zoomFactor)
 	local dx = Math.abs(x - cellCenterX)
 	local dy = Math.abs(y - cellCenterY)
 
@@ -339,73 +284,6 @@ function map.checkTileCollision(tile,object)
 	if (dx / (cellWidth * 0.5) + dy  (cellHeight * 0.5) <= 1) then
 
 	end
-end
-
-function map:isTileAccesable(posX,posY)
-  local accesable =true
-  local tile  = map.getTileByPos(posX,posY)
-  print("j:"..tile.y .. " i: " ..tile.x)
-
-  for tIdx in pairs(blockedTiles)do
-    if(blockedTiles[tIdx].j == tile.x and  blockedTiles[tIdx].i == tile.y) then
-      accesable = false
-    end
-  end
-  print(accesable)
-  return accesable
-end
-
---This next function had the underscore added to avoid collisions with
---any other possible split function the user may want to use.
-function string:split_(sSeparator, nMax, bRegexp)
-	assert(sSeparator ~= '')
-	assert(nMax == nil or nMax >= 1)
-
-	local aRecord = {}
-
-	if self:len() > 0 then
-		local bPlain = not bRegexp
-		nMax = nMax or -1
-
-		local nField, nStart = 1, 1
-		local nFirst,nLast = self:find(sSeparator, nStart, bPlain)
-		while nFirst and nMax ~= 0 do
-			aRecord[nField] = self:sub(nStart, nFirst-1)
-			nField = nField+1
-			nStart = nLast+1
-			nFirst,nLast = self:find(sSeparator, nStart, bPlain)
-			nMax = nMax-1
-		end
-		aRecord[nField] = self:sub(nStart)
-	end
-
-	return aRecord
-  --Credit goes to JoanOrdinas @ lua-users.org
-end
-
-function spairs(t, order)
-    -- collect the keys
-    local keys = {}
-    for k in pairs(t) do keys[#keys+1] = k end
-
-    -- if order function given, sort by it by passing the table and keys a, b,
-    -- otherwise just sort the keys
-    if order then
-        table.sort(keys, function(a,b) return order(t, a, b) end)
-    else
-        table.sort(keys)
-    end
-
-    -- return the iterator function
-    local i = 0
-    return function()
-        i = i + 1
-        if keys[i] then
-            return keys[i], t[keys[i]]
-        end
-    end
-		--https://stackoverflow.com/questions/15706270/sort-a-table-in-lua
-		--Function "spairs" by Michal Kottman.
 end
 
 function map.toIso(x, y)
@@ -425,23 +303,106 @@ function map.toCartesian(x, y)
 	return x, y
 end
 
-
-function map.removeObject(i,j)
-
-end
-
-
--- Collision detection function;
--- Returns true if two boxes overlap, false if they don't;
--- x1,y1 are the top-left coords of the first box, while w1,h1 are its width and height;
--- x2,y2,w2 & h2 are the same, but for the second box.
-function CheckCollision(x1,y1,w1,h1, x2,y2,w2,h2)
-  return x1 < x2+w2 and
-         x2 < x1+w1 and
-         y1 < y2+h2 and
-         y2 < y1+h1
-end
-
-
-
 return map
+
+
+
+-- function map:isTileAccesable(posX,posY)
+--   local accesable =true
+--   local tile  = map.getTileByPos(posX,posY)
+--   print("j:"..tile.y .. " i: " ..tile.x)
+--
+--   for tIdx in pairs(blockedTiles)do
+--     if(blockedTiles[tIdx].j == tile.x and  blockedTiles[tIdx].i == tile.y) then
+--       accesable = false
+--     end
+--   end
+--   print(accesable)
+--   return accesable
+-- end
+
+
+--
+-- --This next function had the underscore added to avoid collisions with
+-- --any other possible split function the user may want to use.
+-- function string:split_(sSeparator, nMax, bRegexp)
+-- 	assert(sSeparator ~= '')
+-- 	assert(nMax == nil or nMax >= 1)
+--
+-- 	local aRecord = {}
+--
+-- 	if self:len() > 0 then
+-- 		local bPlain = not bRegexp
+-- 		nMax = nMax or -1
+--
+-- 		local nField, nStart = 1, 1
+-- 		local nFirst,nLast = self:find(sSeparator, nStart, bPlain)
+-- 		while nFirst and nMax ~= 0 do
+-- 			aRecord[nField] = self:sub(nStart, nFirst-1)
+-- 			nField = nField+1
+-- 			nStart = nLast+1
+-- 			nFirst,nLast = self:find(sSeparator, nStart, bPlain)
+-- 			nMax = nMax-1
+-- 		end
+-- 		aRecord[nField] = self:sub(nStart)
+-- 	end
+--
+-- 	return aRecord
+--   --Credit goes to JoanOrdinas @ lua-users.org
+-- end
+
+
+--
+-- function spairs(t, order)
+--     -- collect the keys
+--     local keys = {}
+--     for k in pairs(t) do keys[#keys+1] = k end
+--
+--     -- if order function given, sort by it by passing the table and keys a, b,
+--     -- otherwise just sort the keys
+--     if order then
+--         table.sort(keys, function(a,b) return order(t, a, b) end)
+--     else
+--         table.sort(keys)
+--     end
+--
+--     -- return the iterator function
+--     local i = 0
+--     return function()
+--         i = i + 1
+--         if keys[i] then
+--             return keys[i], t[keys[i]]
+--         end
+--     end
+-- 		--https://stackoverflow.com/questions/15706270/sort-a-table-in-lua
+-- 		--Function "spairs" by Michal Kottman.
+-- end
+
+-- -- Collision detection function;
+-- -- Returns true if two boxes overlap, false if they don't;
+-- -- x1,y1 are the top-left coords of the first box, while w1,h1 are its width and height;
+-- -- x2,y2,w2 & h2 are the same, but for the second box.
+-- function CheckCollision(x1,y1,w1,h1, x2,y2,w2,h2)
+--   return x1 < x2+w2 and
+--          x2 < x1+w1 and
+--          y1 < y2+h2 and
+--          y2 < y1+h1
+-- end
+
+
+--
+-- function map.drawRect(txPos,tyPos)
+--   -- objId = objId+1
+--   -- local object = {
+--   --   id = objId,
+--   --   txPos=txPos, -- x =j
+--   --   tyPos=tyPos, -- y = i
+--   --   textureKey=textureKey,
+--   --   offSetX=offSetX or 0 ,
+--   --   offSetY=offSetY or 0 ,
+--   --   height=map.data.objects[textureKey].height,
+--   --   width= map.data.objects[textureKey].width,
+--   --   collider = map.data.objects[textureKey].collider,
+--   --   --flip = map.data.objects[textureKey].flip
+--   -- }
+-- end

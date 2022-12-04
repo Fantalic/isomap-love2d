@@ -2,21 +2,6 @@
 -- handles keyboard inputs
 -- ==============================
 
--- default bindings
-local bindings = {
-    player = {
-      moveUp = "w",
-      moveDown = "s",
-      moveRight = "d",
-      moveLeft = "a",
-    },
-
-    moveCameraUp = "keyUp",
-    moveCameraDown = "keyDown",
-    moveCameraRight = "keyRight",
-    moveCameraLeft = "keyLeft"
-}
-
 -- keyboard object
 local keyboard = {
   bindings = {},  -- holds a control object (TControl) behind the keyboard key as table key
@@ -28,8 +13,6 @@ end
 
 function keyboard:keypressed(key)
   update = true
-
-
   -- holds control object (TControl)
   local control = self.bindings[key]
   if (control ~= nil ) then
@@ -41,10 +24,6 @@ function keyboard:keypressed(key)
       control.keysPressedCount = control.keysPressedCount + 1
     end
   end
-
-
-
-  --playerIsMoving = table.containsValue({"w","a","s","d"},key)
 
 end
 
@@ -88,12 +67,13 @@ function keyboard:addMovmentControl(name,bindings,callback,stopCb)
       self.bindings.right,
       self.bindings.left
     )
-    print(dir)
     callback(dt,dir)
   end
   function control:stop()
     control.active = false;
-    stopCb()
+    if(stopCb ~=nil) then
+      stopCb()
+    end
   end
   function control:remove()
     for k, v in pairs(bindings) do
@@ -110,8 +90,6 @@ end
 
 function keyboard.getMovmentDirection(keyUp,keyDown,keyRight,keyLeft)
 
-print(keyLeft)
-print(keyUp.. " ".. keyDown.. " ".. keyRight .." ")
  -- first animation level :
  local direction = "" -- type: ["N","S","W","O","NW","NO","SW","SO"]
 

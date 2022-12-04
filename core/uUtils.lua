@@ -22,7 +22,7 @@ function uUtils.loadFile(path)
 	return json.decode(mapJson)
 end
 
-function uUtils.inspect(anything,deepth)
+function inspect(anything,deepth)
   if(deepth == nil) then deepth = 10 end
   if anything == nil then return "nil" end
   local output = nil
@@ -76,6 +76,14 @@ function table.values(tbl)
     table.insert(values,v)
   end
   return values
+end
+
+function table.merge(t1, t2)
+   for k,v in ipairs(t2) do
+      table.insert(t1, v)
+   end
+
+   return t1
 end
 
 

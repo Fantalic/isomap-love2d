@@ -125,18 +125,18 @@ function player:update(dt,map)
 end
 
 function player:draw(x,y,zoom) --zoom
-  local correctFaktor = 1
-  -- _C.pixelSize
-  if(x == nil)then
-    x = love.graphics.getWidth( )/2
-  end
-  if(y== nil )then
-     y = love.graphics.getHeight( )/2
-  end
-  posY = y -- - (self.width*correctFaktor*zoom)/2
-  posX = x --  - (self.height*correctFaktor*zoom)/2
+  -- local correctFaktor = 1
+  -- -- _C.pixelSize
+  -- if(x == nil)then
+  --   x = love.graphics.getWidth( )/2
+  -- end
+  -- if(y== nil )then
+  --    y = love.graphics.getHeight( )/2
+  -- end
+  -- posY = y -- - (self.width*correctFaktor*zoom)/2
+  -- posX = x --  - (self.height*correctFaktor*zoom)/2
 
-  self.currentAction:draw(posX,posY,zoom*1.5,zoom*1.5)
+  self.currentAction:draw(self.posX,self.posY,zoom*1.5,zoom*1.5)
 end
 
 function grab()

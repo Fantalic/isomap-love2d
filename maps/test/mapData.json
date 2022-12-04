@@ -8,7 +8,9 @@
   "tree":{
     "file":"tree.png",
     "collider":"treeCollider.png",
-    "flip":3.65
+    "flip":3.65,
+    "size":[2,2],
+    "blockedTiles": [[1,1]]
   },
   "grass": {
     "file": "grass.png",

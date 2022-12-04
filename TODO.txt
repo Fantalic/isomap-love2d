@@ -1,0 +1,20 @@
+camera movement
+
+- fighting.. play stop strategy; no rounds
+
+- control a group or single player
+
+- have a village organize rebelion and defend claimed terretory (jagged allience)
+
+- influence:
+    jagged allience,
+    rimworld,
+    2d tarkov
+
+- build spacecraft
+
+- multiplayer
+  - when entering new terrtory make chance to join worlds with another player.
+  - when joined and player is not online the other player will see it as abanished ( verlassen)
+    the player can write a letter and leave a card for everyone who comes along and he is dead.
+    player can mark things on the card and this part can join in another players world

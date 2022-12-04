@@ -3,29 +3,123 @@ local utils = require("core/uUtils")
 
 local map = {
   name = "Simple road",
-  version="v0.1",
   lighting="255|255|255",
   sizeX = 30,
   sizeY = 30,
   tileWidth = 64,
   tileHeight =64,
-  ground= {},
-  objects = {},
-  textures = {}
+  tiles = {},
+  objects = {}
 }
 
-function map.generate()
+local textures = {}
+local jsonData = {}
 
-  map.ground = {}
-  -- ground
-  local grass = "grass"
-  for iy = 1, map.sizeY ,1 do
-    map.ground[iy] = {}
-    for ix = 1, map.sizeX,1 do
-      map.ground[iy][ix] = grass
+
+function map:load()
+  local count = 0
+  jsonData = utils.loadFile("maps/test/mapData.json")
+  print("files:")
+  for key, data in pairs(jsonData) do
+    textures[key] = love.graphics.newImage("assets/textures/"..data.file)
+    -- if(data.collider) then
+    --   map.objects[key].collider = love.image.newImageData("assets/textures/"..data.collider)
+    -- end
+  end
+  self:generate()
+end
+
+function map:createEmptyObject(width,height)
+  return {
+    blocked=false,
+    width=width,
+    height=heigth
+  }
+end
+
+function map:insertTexture(tKey,ix,iy)
+  if (map.tiles[iy] == nil ) then
+    map.tiles[iy] = {}
+  end
+  if(map.tiles[iy][ix] == nil ) then
+    map.tiles[iy][ix] = {}
+  end
+
+  local level = #map.tiles[iy][ix]+1
+  object = {
+    textureKey = tKey,
+    texture = textures[tKey] or nil,
+    x=ix, y=iy,
+    level = level,
+    blocked=false,
+    width = textures[tKey]:getWidth(),
+    height = textures[tKey]:getHeight()
+  }
+  table.merge(object,jsonData[tKey])
+
+  if(jsonData[tKey].blockedTiles) then
+    for idx = 1, #jsonData[tKey].blockedTiles ,1 do
+      local pos = jsonData[tKey].blockedTiles[idx]
+      local tileData = map.tiles[iy-pos[1]][ix-pos[2]]
+      if(tileData and tileData[1]) then
+        map.tiles[iy-pos[1]][ix-pos[2]][1].blocked = true
+      end
     end
   end
-  print(#map.ground)
+
+   map.tiles[iy][ix][level] = object
+  return object
+end
+
+function map:createObject(ix,iy,tKey)
+  local object = self:insertTexture(tKey,ix,iy)
+  object.id = #self.objects + 1
+
+  table.insert(self.objects, object)
+  return object
+end
+
+function map:insertObject(ix,iy,object,level)
+  if (map.tiles[iy] == nil ) then
+    map.tiles[iy] = {}
+  end
+  if(map.tiles[iy][ix] == nil ) then
+    map.tiles[iy][ix] = {{}}
+  end
+
+  if(level == nil ) then
+    level = #map.tiles[iy][ix]+1
+  end
+
+  object.id = #map.objects + 1
+  object.blocked = true
+  object.level = level
+
+  -- make room to insert object
+  if(map.tiles[iy][ix][level]) then
+    map.tiles[iy][ix][#map.tiles[iy][ix]+1] = {}
+    for i = level, #map.tiles[iy][ix],1 do
+      local obj = map.tiles[iy][ix][i]
+      map.tiles[iy][ix][i] = nil
+      map.tiles[iy][ix][i+1] = obj
+    end
+  end
+
+  map.tiles[iy][ix][level] = object
+
+  table.insert(self.objects, object)
+
+  return object
+end
+
+function map:generate()
+  -- ground
+  local tKey = "grass"
+  for iy = 1, map.sizeY ,1 do
+    for ix = 1, map.sizeX,1 do
+      self:insertTexture(tKey,ix,iy)
+    end
+  end
   -- place road
   math.randomseed(os.time())
   local roadStartAxis = math.random(1,2)
@@ -43,7 +137,8 @@ function map.generate()
     roadStartIdx = math.random(1, map.sizeY)
   end
   startPoint[roadStartAxis] = roadStartIdx
-  map.ground[startPoint[1]][startPoint[2]] = road
+
+  self:insertTexture(road,startPoint[2],startPoint[1])
 
   road = roadXForward
   local roadEndIdx = math.random(1,map.sizeX)
@@ -53,7 +148,7 @@ function map.generate()
   end
   endPoint[roadEndAxis] = roadEndIdx
 
-  map.ground[endPoint[1]][endPoint[2]] = road
+  self:insertTexture(road,endPoint[2],endPoint[1])
 
   local nextPoint = startPoint
   local endReached = false
@@ -84,31 +179,13 @@ function map.generate()
       nextPoint[axis] = nextPoint[axis] + (delta[axis]/math.abs(delta[axis]))
       --choose texture to place
       if axis == 1 then
-        map.ground[nextPoint[1]][nextPoint[2]] = roadYForward
+        self:insertTexture(roadYForward,nextPoint[2],nextPoint[1])
       else
-        map.ground[nextPoint[1]][nextPoint[2]] = roadXForward
+        self:insertTexture(roadXForward,nextPoint[2],nextPoint[1])
       end
     end
   end
 end
 
-function map.load()
-  local count = 0
-  local mapData = utils.loadFile("maps/test/mapData.json")
-  print("files:")
-  for key, data in pairs(mapData) do
-    map.textures[key] = love.graphics.newImage("assets/textures/"..data.file)
-    map.objects[key] = {
-      textureKey = key,
-      flip = data.flip,-- tileheight
-      width = map.textures[key]:getWidth(),
-      height = map.textures[key]:getHeight()
-    }
-    if(data.collider) then
-      map.objects[key].collider = love.image.newImageData("assets/textures/"..data.collider)
-    end
-  end
-  map.generate()
-end
 
 return map
