@@ -15,6 +15,7 @@ local lovebird = require("lib/lovebird")
 local inGame = require("core/scene/inGame")
 --local rigitbody = require "core/rigitbody"
 local editor = require("core/scene/editor")
+local testGUI = require("editor/GUI")
 
 local clickPosX = 0
 local clickPosY = 0
@@ -35,20 +36,22 @@ function love.load()
 	love.graphics.setBackgroundColor(0, 0, 69)
 	love.graphics.setDefaultFilter("linear", "linear", 8)
 
-  editor:load()  
+  -- load editor
+  -- editor:load()
+
 	-- load random world ( minimap )
 	-- world.load( os.time() )
 
   --load in game scene
-	-- inGame:load()
-
+	inGame:load()
+	testGUI:load()
 end
 
 function love.update(dt)
 	-- debuging under : http://127.0.0.1:8000
 	--lovebird.update()
-
-	-- inGame:update(dt)
+	 testGUI:update(dt)
+	 inGame:update(dt)
 end
 
 
@@ -58,8 +61,9 @@ function love.draw()
 	--rigitbody:draw()
 	-- love.graphics.rectangle("fill", clickPosX,clickPosY, pixelSize,pixelSize)
 
-	--inGame:draw()
-	editor:draw()
+	inGame:draw()
+	testGUI:draw()
+	--editor:draw()
 
 	-- [debug infos]
 	info = love.graphics.getStats()
@@ -73,20 +77,25 @@ function love.draw()
 end
 
 function love.mousereleased(x, y, button, isTouch)
-	editor:mousereleased(x, y, button, isTouch)
+	--editor:mousereleased(x, y, button, isTouch)
 		-- body...
-	--inGame:mousereleased(x,y,button,isTouch)
+
+	-- if event return true, the event is stoped
+	if (testGUI:mousereleased(x,y,button,isTouch)) then
+		return
+	end
+	if(inGame:mousereleased(x,y,button,isTouch)) then return end
 end
 
 function love.wheelmoved(x, y)
-  --inGame:wheelmoved(x,y)
+  inGame:wheelmoved(x,y)
 end
 
 function love.keypressed(key, scancode, isrepeat)
-	--inGame:keypressed(key)
+	inGame:keypressed(key)
 end
 
 function love.keyreleased(key)
 
-	--inGame:keyreleased(key)
+	inGame:keyreleased(key)
 end

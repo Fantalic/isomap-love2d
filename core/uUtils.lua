@@ -2,6 +2,25 @@ local json = require "lib/dkjson"
 
 local uUtils = {}
 
+function uUtils.isPointInBounderies(point,rectPos,rectSize)
+  local dx = rectPos.x - point.x
+  if(dx < 0) then
+    local ddx = rectPos.x + rectSize.x - point.x
+    if(ddx > 0 ) then
+      dy = rectPos.y - point.y
+      if(dy < 0) then
+        local ddy = rectPos.y + rectSize.y - point.y
+        if(ddy > 0 ) then
+          return true
+        end
+      end
+    end
+
+  end
+
+  return false
+end
+
 function uUtils.round(x)
   if(x+0.5> x+1 ) then
     return x+1

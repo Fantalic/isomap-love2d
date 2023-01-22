@@ -1,10 +1,15 @@
+
+local createGrid = require ("core/scene/isoGrid")
+
 local editor = {}
 
 local objects = {}
 local pixelSize = 5*10
 local cube = {texture=nil}
+local grid = nil
 
 function editor:load()
+  grid = createGrid()
   cube.texture =  love.graphics.newImage("assets/textures/isoCube64x64.png")
 end
 
@@ -12,6 +17,10 @@ function editor:draw()
   for idx = 1, #objects, 1 do
     objects[idx]:draw()
   end
+end
+
+function editor:drawGround()
+  
 end
 
 

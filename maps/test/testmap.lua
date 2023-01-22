@@ -15,7 +15,6 @@ local map = {
 local textures = {}
 local jsonData = {}
 
-
 function map:load()
   local count = 0
   jsonData = utils.loadFile("maps/test/mapData.json")
