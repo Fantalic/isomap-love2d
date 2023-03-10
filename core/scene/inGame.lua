@@ -91,28 +91,9 @@ end
 
 function InGame:draw()
 	isomap:draw(camera.zoom)
-	-- love.graphics.rectangle("fill", clickPosX,clickPosY, pixelSize,pixelSize)
-
-  -- [debug infos]
-	info = love.graphics.getStats()
-	love.graphics.print("FPS: "..love.timer.getFPS())
-	love.graphics.print("Draw calls: "..info.drawcalls, 0, 12)
-	love.graphics.print("Texture memory: "..((info.texturememory/1024)/1024).."mb", 0, 24)
-
-	love.graphics.print("X: "..math.floor(x).." Y: "..math.floor(y), 0, 48)
-	love.graphics.print("clickd tile x: ".. clickedTile.x .. " y: ".. clickedTile.y, 0, 60)
-
-
 end
 
 function InGame:mousereleased(x, y, button, isTouch)
-	-- body...
-	clickPosX = x
-	clickPosY = y
-	clickedTile = isomap.getTileByPos(x,y)
-  --isomap.insertNewObject(clickedTile.x,clickedTile.y,"tree",0)
-	isomap:insertNewObject(clickedTile.x,clickedTile.y,"tree",0)
-
 end
 
 function InGame:wheelmoved(x, y)

@@ -14,7 +14,7 @@ local lovebird = require("lib/lovebird")
 --local world = require "maps/world"
 local inGame = require("core/scene/inGame")
 --local rigitbody = require "core/rigitbody"
-local testGUI = require("editor/GUI")
+local createGUI = require("editor/GUI")
 
 local clickPosX = 0
 local clickPosY = 0
@@ -28,43 +28,30 @@ local x = 0
 local y = 0
 
 local axeSheet = nil
-
+local testGUI = nil
 
 local scene = {}
 
 function scene:load()
-	--Set background to deep blue
-	love.graphics.setBackgroundColor(0, 0, 69)
-	love.graphics.setDefaultFilter("linear", "linear", 8)
-
-  -- load editor
-  -- editor:load()
-
-	-- load random world ( minimap )
-	-- world.load( os.time() )
-
   --load in game scene
 	inGame:load()
+	testGUI = createGUI(
+		{0.5,0.2,0.2},
+		{x=0, y=gWinSize.y - 40},
+		{x=gWinSize.x, y=40}
+	)
 	testGUI:load()
 end
 
 function scene:update(dt)
-	-- debuging under : http://127.0.0.1:8000
-	--lovebird.update()
 	 testGUI:update(dt)
 	 inGame:update(dt)
 end
 
 
 function scene:draw()
-	-- grid.draw()
-	-- isomap:draw(camera.zoom)
-	--rigitbody:draw()
-	-- love.graphics.rectangle("fill", clickPosX,clickPosY, pixelSize,pixelSize)
-
 	inGame:draw()
 	testGUI:draw()
-	--editor:draw()
 
 	-- [debug infos]
 	info = love.graphics.getStats()
@@ -72,15 +59,12 @@ function scene:draw()
 	love.graphics.print("Draw calls: "..info.drawcalls, 0, 12)
 	love.graphics.print("Texture memory: "..((info.texturememory/1024)/1024).."mb", 0, 24)
 
-	love.graphics.print("X: "..math.floor(x).." Y: "..math.floor(y), 0, 48)
-	love.graphics.print("clickd tile x: ".. clickedTile.x .. " y: ".. clickedTile.y, 0, 60)
+	-- love.graphics.print("X: "..math.floor(x).." Y: "..math.floor(y), 0, 48)
+	-- love.graphics.print("clickd tile x: ".. clickedTile.x .. " y: ".. clickedTile.y, 0, 60)
 
 end
 
 function scene:mousereleased(x, y, button, isTouch)
-	--editor:mousereleased(x, y, button, isTouch)
-		-- body...
-
 	-- if event return true, the event is stoped
 	if (testGUI:mousereleased(x,y,button,isTouch)) then
 		return
@@ -97,7 +81,6 @@ function scene:keypressed(key, scancode, isrepeat)
 end
 
 function scene:keyreleased(key)
-
 	inGame:keyreleased(key)
 end
 

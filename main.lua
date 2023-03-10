@@ -7,9 +7,15 @@
 -- [dev]
 --debugging with lovebird (?) under : http://127.0.0.1:8000
 
+require "core/globals"
 local scene = require "editor/scene"
 
 function love.load()
+	-- set global values
+	local x,y = love.graphics.getDimensions( )
+	gWinSize.x = x
+	gWinSize.y = y
+
 	--Set background to deep blue
 	love.graphics.setBackgroundColor(0, 0, 69)
 	love.graphics.setDefaultFilter("linear", "linear", 8)
